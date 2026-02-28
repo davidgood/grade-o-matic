@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO devices\n            (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8, now())\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3ba6ad87738bb7c648ff3a28826256890fa2a38f53e2bcb363568f1e225c70fe"
+}

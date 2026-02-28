@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO user_auth\n            (user_id, password_hash)\n            VALUES\n            ($1, $2)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6c7902e6b3366a0d0dd8e208e2a525d3779d2fd8a571a5fdd05f0c8f644c1792"
+}

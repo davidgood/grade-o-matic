@@ -77,8 +77,8 @@ impl DeviceRepository for DeviceRepo {
 
         sqlx::query!(
             r#"
-            INSERT INTO devices 
-            (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at) 
+            INSERT INTO devices
+            (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, now(), $8, now())
             "#,
             id.clone(),
@@ -160,7 +160,7 @@ impl DeviceRepository for DeviceRepo {
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::<_>::new(
             r#"
-            INSERT INTO devices 
+            INSERT INTO devices
             (id, user_id, name, status, device_os, registered_at, created_by, created_at, modified_by, modified_at)
             "#,
         );

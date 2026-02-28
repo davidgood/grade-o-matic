@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url,\n                content_type, file_size, file_type, created_by,\n                created_at,\n                modified_by,\n                modified_at\n            FROM uploaded_files \n            WHERE user_id = $1\n            ",
+  "query": "\n            SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url,\n                content_type, file_size, file_type, created_by,\n                created_at,\n                modified_by,\n                modified_at\n            FROM uploaded_files\n            WHERE user_id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -168,5 +168,5 @@
       false
     ]
   },
-  "hash": "1b9fb6639086e64da32a19568b80c55b56aba4f5d92ef8f84ee03e7c102e5c13"
+  "hash": "e2de17da22a4fd148780c12ecfefcca02932647add4b027135a9e32f2330282c"
 }

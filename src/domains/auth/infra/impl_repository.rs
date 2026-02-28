@@ -35,9 +35,9 @@ impl UserAuthRepository for UserAuthRepo {
     ) -> Result<(), sqlx::Error> {
         sqlx::query!(
             r#"
-            INSERT INTO user_auth 
+            INSERT INTO user_auth
             (user_id, password_hash)
-            VALUES 
+            VALUES
             ($1, $2)
             "#,
             user_auth.user_id,

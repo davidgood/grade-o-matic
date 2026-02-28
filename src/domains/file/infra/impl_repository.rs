@@ -10,11 +10,11 @@ pub struct FileRepo;
 
 const FIND_FILE_INFO_QUERY: &str = r#"
     SELECT id, user_id, file_name, origin_file_name, file_relative_path, file_url,
-            content_type, file_size, file_type, created_by, 
-            created_at, 
+            content_type, file_size, file_type, created_by,
+            created_at,
             modified_by,
             modified_at
-    FROM uploaded_files 
+    FROM uploaded_files
     WHERE id = $1
 "#;
 
@@ -69,7 +69,7 @@ impl FileRepository for FileRepo {
                 created_at,
                 modified_by,
                 modified_at
-            FROM uploaded_files 
+            FROM uploaded_files
             WHERE user_id = $1
             "#,
             user_id

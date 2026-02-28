@@ -21,7 +21,7 @@ const FIND_USER_QUERY: &str = r#"
         uf.id as file_id,
         uf.origin_file_name
     FROM users u
-    LEFT JOIN uploaded_files uf 
+    LEFT JOIN uploaded_files uf
             ON uf.user_id = u.id and uf.file_type = 'profile_picture'
     WHERE 1=1
     "#;
@@ -38,7 +38,7 @@ const FIND_USER_INFO_QUERY: &str = r#"
         uf.id as file_id,
         uf.origin_file_name
     FROM users u
-    LEFT JOIN uploaded_files uf 
+    LEFT JOIN uploaded_files uf
            ON uf.user_id = u.id and uf.file_type = 'profile_picture'
     WHERE u.id = $1
     "#;
@@ -124,11 +124,11 @@ impl UserRepository for UserRepo {
         if existing.is_some() {
             sqlx::query(
                 r#"
-                UPDATE users 
+                UPDATE users
                 SET username = $1,
-                    email = $2, 
-                    modified_by = $3, 
-                    modified_at = NOW() 
+                    email = $2,
+                    modified_by = $3,
+                    modified_at = NOW()
                 WHERE id = $4
                 "#,
             )
