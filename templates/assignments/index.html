@@ -1,0 +1,5 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+<h1>Assignments</h1>
+<div id="assignments-table" hx-get="/ui/fragments/assignments/table" hx-trigger="load"></div>
+{% endblock %}
