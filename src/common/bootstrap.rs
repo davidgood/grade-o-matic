@@ -3,6 +3,7 @@ use std::sync::Arc;
 use sqlx::PgPool;
 
 use crate::common::config::Config;
+use crate::domains::assignments::{AssignmentServiceTrait, create_assignment_service};
 use crate::domains::auth::{AuthService, AuthServiceTrait};
 use crate::domains::device::{DeviceService, DeviceServiceTrait};
 use crate::domains::file::{FileService, FileServiceTrait};
@@ -18,12 +19,15 @@ pub fn build_app_state(pool: PgPool, config: Config) -> AppState {
         FileService::create_service(config.clone(), pool.clone());
     let user_service: Arc<dyn UserServiceTrait> =
         UserService::create_service(pool.clone(), Arc::clone(&file_service));
+    let assignment_service: Arc<dyn AssignmentServiceTrait> =
+        create_assignment_service(pool.clone());
     let device_service: Arc<dyn DeviceServiceTrait> = DeviceService::create_service(pool.clone());
 
     AppState::new(
         config,
         auth_service,
         user_service,
+        assignment_service,
         device_service,
         file_service,
     )
