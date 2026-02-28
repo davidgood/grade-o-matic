@@ -1,11 +1,14 @@
 use crate::{
     common::{
-        app_state::AppState, dto::RestApiResponse, error::AppError, jwt::Claims,
+        dto::RestApiResponse, error::AppError, jwt::Claims,
         multipart_helper::parse_multipart_to_maps,
     },
     domains::{
         file::dto::file_dto::UploadFileDto,
-        user::dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
+        user::{
+            dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
+            UserAssetPattern, UserServiceTrait,
+        },
     },
 };
 
@@ -17,6 +20,7 @@ use axum::{
 
 use validator::Validate;
 use uuid::Uuid;
+use std::sync::Arc;
 
 #[utoipa::path(
     get,
@@ -25,10 +29,10 @@ use uuid::Uuid;
     tag = "Users"
 )]
 pub async fn get_user_by_id(
-    State(state): State<AppState>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = state.user_service.get_user_by_id(id).await?;
+    let user = user_service.get_user_by_id(id).await?;
     Ok(RestApiResponse::success(user))
 }
 
@@ -40,10 +44,10 @@ pub async fn get_user_by_id(
     tag = "Users"
 )]
 pub async fn get_user_list(
-    State(state): State<AppState>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
     Json(payload): Json<SearchUserDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let users = state.user_service.get_user_list(payload).await?;
+    let users = user_service.get_user_list(payload).await?;
     Ok(RestApiResponse::success(users))
 }
 
@@ -53,8 +57,10 @@ pub async fn get_user_list(
     responses((status = 200, description = "List all users", body = [UserDto])),
     tag = "Users"
 )]
-pub async fn get_users(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let users = state.user_service.get_users().await?;
+pub async fn get_users(
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
+) -> Result<impl IntoResponse, AppError> {
+    let users = user_service.get_users().await?;
     Ok(RestApiResponse::success(users))
 }
 
@@ -70,14 +76,14 @@ pub async fn get_users(State(state): State<AppState>) -> Result<impl IntoRespons
     tag = "Users"
 )]
 pub async fn create_user(
-    State(state): State<AppState>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
+    State(asset_pattern): State<UserAssetPattern>,
     Extension(claims): Extension<Claims>,
     multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
     let modified_by = claims.sub;
 
-    let (mut fields, mut files) =
-        parse_multipart_to_maps(multipart, &state.config.asset_allowed_extensions_pattern).await?;
+    let (mut fields, mut files) = parse_multipart_to_maps(multipart, &asset_pattern.0).await?;
 
     // Validate required fields.
     let username = fields
@@ -117,10 +123,7 @@ pub async fn create_user(
         }
     }
 
-    let user = state
-        .user_service
-        .create_user(create_user, upload_file_dto.as_mut())
-        .await?;
+    let user = user_service.create_user(create_user, upload_file_dto.as_mut()).await?;
 
     Ok(RestApiResponse::success(user))
 }
@@ -133,7 +136,7 @@ pub async fn create_user(
     tag = "Users"
 )]
 pub async fn update_user(
-    State(state): State<AppState>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
     Json(payload): Json<UpdateUserDto>,
@@ -147,7 +150,7 @@ pub async fn update_user(
     let mut payload = payload;
     payload.modified_by = claims.sub;
 
-    let user = state.user_service.update_user(id, payload).await?;
+    let user = user_service.update_user(id, payload).await?;
     Ok(RestApiResponse::success(user))
 }
 
@@ -158,9 +161,9 @@ pub async fn update_user(
     tag = "Users"
 )]
 pub async fn delete_user(
-    State(state): State<AppState>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
     axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let message = state.user_service.delete_user(id).await?;
+    let message = user_service.delete_user(id).await?;
     Ok(RestApiResponse::success_with_message(message, ()))
 }

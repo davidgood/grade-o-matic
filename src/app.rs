@@ -76,14 +76,14 @@ pub fn create_router(state: AppState) -> Router {
 
     // /auth routes (login, register, refresh, etc.) — no logging here
     let auth_router = Router::new()
-        .nest("/auth", user_auth_routes())
+        .nest("/auth", user_auth_routes::<AppState>())
         .layer(middleware::from_fn(make_request_response_inspector(false)));
 
     // Protected API routes
     let protected_routes = Router::new()
         .nest("/assignments", assignment_routes())
-        .nest("/user", user_routes())
-        .nest("/device", device_routes())
+        .nest("/user", user_routes::<AppState>())
+        .nest("/device", device_routes::<AppState>())
         .nest("/file", file_routes())
         // by default, Multipart limits to 2MB; override with `asset_max_size`
         // See https://docs.rs/axum/latest/axum/extract/struct.Multipart.html

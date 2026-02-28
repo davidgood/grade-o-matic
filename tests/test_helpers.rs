@@ -22,6 +22,7 @@ use grade_o_matic::{
         bootstrap::build_app_state,
         config::Config,
         dto::RestApiResponse,
+        hash_util,
         jwt::{AuthBody, AuthPayload},
     },
 };
@@ -39,7 +40,7 @@ pub const TEST_CLIENT_ID: &str = "apitest01";
 pub const TEST_CLIENT_SECRET: &str = "test_password";
 
 #[allow(dead_code)]
-pub const TEST_USER_ID: &str = "00000000-0000-0000-0000-000000000001";
+pub const TEST_USER_ID: uuid::Uuid = uuid::uuid!("00000000-0000-0000-0000-000000000000");
 
 /// Helper function to load environment variables from .env.test file
 fn load_test_env() {
@@ -69,7 +70,43 @@ pub async fn setup_test_db() -> Result<PgPool, Box<dyn std::error::Error>> {
         .connect(database_url)
         .await?;
 
+    seed_test_auth_user(&pool).await?;
+
     Ok(pool)
+}
+
+async fn seed_test_auth_user(pool: &PgPool) -> Result<(), Box<dyn std::error::Error>> {
+    let password_hash = hash_util::hash_password(TEST_CLIENT_SECRET)
+        .map_err(|e| format!("failed to hash test password: {e}"))?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO users (id, username, email, created_by, modified_by)
+        VALUES ($1, $2, $3, NULL, NULL)
+        ON CONFLICT (id) DO UPDATE
+        SET username = EXCLUDED.username, email = EXCLUDED.email, modified_at = NOW()
+        "#,
+    )
+    .bind(TEST_USER_ID)
+    .bind(TEST_CLIENT_ID)
+    .bind("apitest01@example.test")
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        INSERT INTO user_auth (user_id, password_hash)
+        VALUES ($1, $2)
+        ON CONFLICT (user_id) DO UPDATE
+        SET password_hash = EXCLUDED.password_hash, modified_at = NOW()
+        "#,
+    )
+    .bind(TEST_USER_ID)
+    .bind(password_hash)
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
 
 fn load_test_config() -> Result<Config, Box<dyn std::error::Error>> {

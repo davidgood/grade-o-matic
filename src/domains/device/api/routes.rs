@@ -1,12 +1,16 @@
 use super::handlers::*;
 use crate::{
-    common::app_state::AppState,
-    domains::device::dto::device_dto::{CreateDeviceDto, DeviceDto, UpdateDeviceDto},
+    domains::device::{
+        dto::device_dto::{CreateDeviceDto, DeviceDto, UpdateDeviceDto},
+        DeviceServiceTrait,
+    },
 };
 use axum::{
+    extract::FromRef,
     routing::{delete, get, post, put},
     Router,
 };
+use std::sync::Arc;
 
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
@@ -53,7 +57,11 @@ impl utoipa::Modify for DeviceApiDoc {
 
 /// This function creates a router for the device routes.
 /// It defines the routes and their corresponding handlers.
-pub fn device_routes() -> Router<AppState> {
+pub fn device_routes<S>() -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+    Arc<dyn DeviceServiceTrait>: FromRef<S>,
+{
     Router::new()
         .route("/", get(get_devices))
         .route("/", post(create_device))

@@ -18,6 +18,9 @@ mod infra {
     pub mod impl_service;
 }
 
+#[derive(Clone)]
+pub struct UserAssetPattern(pub regex::Regex);
+
 // Re-export commonly used items for convenience
 pub use api::routes::{user_routes, UserApiDoc};
 pub use domain::service::UserServiceTrait;

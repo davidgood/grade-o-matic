@@ -81,7 +81,7 @@ async fn request(router: &Router, method: Method, uri: &str) -> axum::response::
 }
 
 async fn request_with_auth(router: &Router, method: Method, uri: &str) -> axum::response::Response {
-    let token = jwt::make_jwt_token(TEST_USER_ID).unwrap();
+    let token = jwt::make_jwt_token(&TEST_USER_ID).unwrap();
     let req = Request::builder()
         .method(method)
         .uri(uri)
@@ -96,7 +96,8 @@ async fn test_public_assets() {
     let config = load_assets_test_config();
     ensure_test_assets(&config);
     let app = create_assets_test_router(&config);
-    let response = request(&app, Method::GET, "/public/images.jpeg");
+    let public_uri = format!("{}/images.jpeg", config.assets_public_url);
+    let response = request(&app, Method::GET, &public_uri);
 
     let (parts, _) = response.await.into_parts();
 
@@ -108,7 +109,8 @@ async fn test_private_assets_without_auth() {
     let config = load_assets_test_config();
     ensure_test_assets(&config);
     let app = create_assets_test_router(&config);
-    let response = request(&app, Method::GET, "/private/profile_picture/images.jpeg");
+    let private_uri = format!("{}/profile_picture/images.jpeg", config.assets_private_url);
+    let response = request(&app, Method::GET, &private_uri);
 
     let (parts, _) = response.await.into_parts();
     assert_eq!(parts.status, StatusCode::UNAUTHORIZED);
@@ -119,7 +121,8 @@ async fn test_private_assets_with_auth() {
     let config = load_assets_test_config();
     ensure_test_assets(&config);
     let app = create_assets_test_router(&config);
-    let response = request_with_auth(&app, Method::GET, "/private/profile_picture/images.jpeg");
+    let private_uri = format!("{}/profile_picture/images.jpeg", config.assets_private_url);
+    let response = request_with_auth(&app, Method::GET, &private_uri);
 
     let (parts, _) = response.await.into_parts();
     assert_eq!(parts.status, StatusCode::OK);

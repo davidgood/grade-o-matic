@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
+use axum::extract::FromRef;
+
 use crate::domains::{
     auth::AuthServiceTrait, device::DeviceServiceTrait, file::FileServiceTrait,
-    user::UserServiceTrait,
+    user::{UserAssetPattern, UserServiceTrait},
 };
 
 use super::config::Config;
@@ -39,5 +41,29 @@ impl AppState {
             device_service,
             file_service,
         }
+    }
+}
+
+impl FromRef<AppState> for Arc<dyn AuthServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.auth_service)
+    }
+}
+
+impl FromRef<AppState> for Arc<dyn DeviceServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.device_service)
+    }
+}
+
+impl FromRef<AppState> for Arc<dyn UserServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.user_service)
+    }
+}
+
+impl FromRef<AppState> for UserAssetPattern {
+    fn from_ref(input: &AppState) -> Self {
+        UserAssetPattern(input.config.asset_allowed_extensions_pattern.clone())
     }
 }

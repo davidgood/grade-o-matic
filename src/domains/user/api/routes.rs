@@ -1,13 +1,17 @@
 use super::handlers::*;
 use crate::{
-    common::app_state::AppState,
-    domains::user::dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
+    domains::user::{
+        dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
+        UserAssetPattern, UserServiceTrait,
+    },
 };
 
 use axum::{
+    extract::FromRef,
     routing::{delete, get, post, put},
     Router,
 };
+use std::sync::Arc;
 
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
@@ -52,7 +56,12 @@ impl utoipa::Modify for UserApiDoc {
     }
 }
 
-pub fn user_routes() -> Router<AppState> {
+pub fn user_routes<S>() -> Router<S>
+where
+    S: Clone + Send + Sync + 'static,
+    Arc<dyn UserServiceTrait>: FromRef<S>,
+    UserAssetPattern: FromRef<S>,
+{
     Router::new()
         .route("/", get(get_users))
         .route("/", post(create_user))

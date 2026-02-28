@@ -1,5 +1,6 @@
 use crate::common::dto::RestApiResponse;
-use crate::common::{app_state::AppState, error::AppError, jwt::Claims};
+use crate::common::{error::AppError, jwt::Claims};
+use crate::domains::device::DeviceServiceTrait;
 
 use crate::domains::device::dto::device_dto::{
     CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateManyDevicesDto,
@@ -9,6 +10,7 @@ use axum::{
     response::IntoResponse,
     Extension, Json,
 };
+use std::sync::Arc;
 
 /// This function creates a router for getting a device by ID
 /// It will return a device if found, otherwise it will return an error
@@ -19,10 +21,10 @@ use axum::{
     tag = "Devices"
 )]
 pub async fn get_device_by_id(
-    State(state): State<AppState>,
+    State(device_service): State<Arc<dyn DeviceServiceTrait>>,
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let device = state.device_service.get_device_by_id(id).await?;
+    let device = device_service.get_device_by_id(id).await?;
     Ok(RestApiResponse::success(device))
 }
 
@@ -34,8 +36,10 @@ pub async fn get_device_by_id(
     responses((status = 200, description = "List all devices", body = [DeviceDto])),
     tag = "Devices"
 )]
-pub async fn get_devices(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let devices = state.device_service.get_devices().await?;
+pub async fn get_devices(
+    State(device_service): State<Arc<dyn DeviceServiceTrait>>,
+) -> Result<impl IntoResponse, AppError> {
+    let devices = device_service.get_devices().await?;
     Ok(RestApiResponse::success(devices))
 }
 
@@ -50,7 +54,7 @@ pub async fn get_devices(State(state): State<AppState>) -> Result<impl IntoRespo
     tag = "Devices"
 )]
 pub async fn create_device(
-    State(state): State<AppState>,
+    State(device_service): State<Arc<dyn DeviceServiceTrait>>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateDeviceDto>,
 ) -> Result<impl IntoResponse, AppError> {
@@ -58,7 +62,7 @@ pub async fn create_device(
     let mut payload = payload;
     payload.modified_by = claims.sub.clone();
 
-    let device = state.device_service.create_device(payload).await?;
+    let device = device_service.create_device(payload).await?;
     Ok(RestApiResponse::success(device))
 }
 
@@ -73,7 +77,7 @@ pub async fn create_device(
     tag = "Devices"
 )]
 pub async fn update_device(
-    State(state): State<AppState>,
+    State(device_service): State<Arc<dyn DeviceServiceTrait>>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
     Json(payload): Json<UpdateDeviceDto>,
@@ -82,7 +86,7 @@ pub async fn update_device(
     let mut payload = payload;
     payload.modified_by = claims.sub.clone();
 
-    let device = state.device_service.update_device(id, payload).await?;
+    let device = device_service.update_device(id, payload).await?;
     Ok(RestApiResponse::success(device))
 }
 
@@ -96,10 +100,10 @@ pub async fn update_device(
     tag = "Devices"
 )]
 pub async fn delete_device(
-    State(state): State<AppState>,
+    State(device_service): State<Arc<dyn DeviceServiceTrait>>,
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let message = state.device_service.delete_device(id).await?;
+    let message = device_service.delete_device(id).await?;
 
     Ok(RestApiResponse::success_with_message(message, ()))
 }
@@ -115,15 +119,14 @@ pub async fn delete_device(
     tag = "Devices"
 )]
 pub async fn update_many_devices(
-    State(state): State<AppState>,
+    State(device_service): State<Arc<dyn DeviceServiceTrait>>,
     Extension(claims): Extension<Claims>,
     Path(user_id): Path<uuid::Uuid>,
     Json(payload): Json<UpdateManyDevicesDto>,
 ) -> Result<impl IntoResponse, AppError> {
     let modified_by = claims.sub.clone();
 
-    let message = state
-        .device_service
+    let message = device_service
         .update_many_devices(user_id, modified_by, payload)
         .await?;
 

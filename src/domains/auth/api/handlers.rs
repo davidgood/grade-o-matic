@@ -1,14 +1,15 @@
 use crate::{
     common::{
-        app_state::AppState,
         dto::RestApiResponse,
         error::AppError,
         jwt::{AuthBody, AuthPayload},
     },
+    domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
 };
 use axum::extract::State;
 use axum::{response::IntoResponse, Json};
+use std::sync::Arc;
 
 /// this function creates a router for creating user authentication registration
 /// it will create a new user in the database
@@ -20,10 +21,10 @@ use axum::{response::IntoResponse, Json};
     tag = "UserAuth"
 )]
 pub async fn create_user_auth(
-    State(state): State<AppState>,
+    State(auth_service): State<Arc<dyn AuthServiceTrait>>,
     Json(payload): Json<AuthUserDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    state.auth_service.create_user_auth(payload).await?;
+    auth_service.create_user_auth(payload).await?;
     Ok(RestApiResponse::success(()))
 }
 
@@ -37,9 +38,9 @@ pub async fn create_user_auth(
     tag = "UserAuth"
 )]
 pub async fn login_user(
-    State(state): State<AppState>,
+    State(auth_service): State<Arc<dyn AuthServiceTrait>>,
     Json(payload): Json<AuthPayload>,
 ) -> Result<impl IntoResponse, AppError> {
-    let auth_body = state.auth_service.login_user(payload).await?;
+    let auth_body = auth_service.login_user(payload).await?;
     Ok(RestApiResponse::success(auth_body))
 }

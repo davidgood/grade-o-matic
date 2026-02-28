@@ -5,7 +5,7 @@ use utoipa::ToSchema;
 
 use crate::domains::device::domain::model::{Device, DeviceOS, DeviceStatus};
 
-#[derive(PartialEq, Debug, Deserialize, Serialize, ToSchema, DtoFrom)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize, ToSchema, DtoFrom)]
 #[dto(from = Device)]
 pub struct DeviceDto {
     pub id: uuid::Uuid,
