@@ -52,6 +52,14 @@ impl UserRepository for UserRepo {
         Ok(users)
     }
 
+    async fn find_by_id(&self, pool: PgPool, id: Uuid) -> Result<Option<User>, sqlx::Error> {
+        let user = sqlx::query_as::<_, User>(FIND_USER_INFO_QUERY)
+            .bind(id)
+            .fetch_optional(&pool)
+            .await?;
+        Ok(user)
+    }
+
     async fn find_list(
         &self,
         pool: PgPool,
@@ -76,14 +84,6 @@ impl UserRepository for UserRepo {
         let query = builder.build_query_as::<User>();
         let users = query.fetch_all(&pool).await?;
         Ok(users)
-    }
-
-    async fn find_by_id(&self, pool: PgPool, id: Uuid) -> Result<Option<User>, sqlx::Error> {
-        let user = sqlx::query_as::<_, User>(FIND_USER_INFO_QUERY)
-            .bind(id)
-            .fetch_optional(&pool)
-            .await?;
-        Ok(user)
     }
 
     async fn create(
