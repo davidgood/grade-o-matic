@@ -1,5 +1,7 @@
 use crate::common::error::AppError;
-use crate::domains::assignments::dto::assignment_dto::AssignmentDto;
+use crate::domains::assignments::dto::assignment_dto::{
+    AssignmentDto, CreateAssignmentDto, UpdateAssignmentDto,
+};
 use async_trait::async_trait;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -10,5 +12,13 @@ pub trait AssignmentServiceTrait: Send + Sync {
     where
         Self: Sized;
 
-    async fn list_assignments(&self) -> Result<Vec<AssignmentDto>, AppError>;
+    async fn list(&self) -> Result<Vec<AssignmentDto>, AppError>;
+
+    async fn get_by_id(&self, id: uuid::Uuid) -> Result<Option<AssignmentDto>, AppError>;
+
+    async fn create(&self, assignment: CreateAssignmentDto) -> Result<AssignmentDto, AppError>;
+
+    async fn update(&self, assignment: UpdateAssignmentDto) -> Result<AssignmentDto, AppError>;
+
+    async fn delete(&self, id: uuid::Uuid) -> Result<String, AppError>;
 }

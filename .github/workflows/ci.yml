@@ -20,12 +20,16 @@ permissions:
 
 env:
   CARGO_TERM_COLOR: always
+  SQLX_OFFLINE: true
+  JWT_SECRET_KEY: ci-test-jwt-secret # pragma: allowlist secret
+  OIDC_ENABLED: false
 
 jobs:
   build_and_test:
-    name: Rust project - latest
+    name: Rust ${{ matrix.toolchain }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         toolchain:
           - stable
@@ -33,27 +37,46 @@ jobs:
           - nightly
     steps:
       - uses: actions/checkout@v4
-      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - run: cargo build --verbose
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.toolchain }}
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ${{ matrix.toolchain }}-workspace
+
+      - name: Run tests (beta/nightly)
+        if: matrix.toolchain != 'stable'
+        run: cargo test --workspace --all-features --locked
+
       - name: Install cargo-llvm-cov
+        if: matrix.toolchain == 'stable'
         uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Generate code coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+        if: matrix.toolchain == 'stable'
+        run: |
+          cargo llvm-cov --all-features --workspace --locked --lcov --output-path lcov.info
+          cargo llvm-cov report --html --output-dir htmlcov
+          cargo llvm-cov report --cobertura --output-path coverage.xml
+          cargo llvm-cov report --summary-only > coverage-summary.txt
+
+      - name: Publish coverage summary
+        if: always() && matrix.toolchain == 'stable'
+        run: |
+          echo "### Coverage Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat coverage-summary.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage HTML report
-        if: always()
+        if: always() && matrix.toolchain == 'stable'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: htmlcov/
-          if-no-files-found: ignore
-          retention-days: 14
-
-      - name: Upload coverage XML
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-xml
-          path: coverage.xml
           if-no-files-found: ignore
           retention-days: 14
