@@ -16,9 +16,16 @@ mod test_helpers;
 use test_helpers::TEST_USER_ID;
 
 fn load_assets_test_config() -> Config {
-    dotenvy::from_filename(".env.test")
-        .or_else(|_| dotenvy::dotenv())
-        .ok();
+    if env::var("JWT_SECRET_KEY").is_err() {
+        unsafe {
+            env::set_var("JWT_SECRET_KEY", "ci-test-jwt-secret");
+        }
+    }
+    if env::var("OIDC_ENABLED").is_err() {
+        unsafe {
+            env::set_var("OIDC_ENABLED", "false");
+        }
+    }
 
     match Config::from_env() {
         Ok(config) => config,

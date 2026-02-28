@@ -45,9 +45,25 @@ pub const TEST_USER_ID: uuid::Uuid = uuid::uuid!("00000000-0000-0000-0000-000000
 /// Helper function to load environment variables from .env.test file
 fn load_test_env() {
     INIT.call_once(|| {
-        if from_filename(".env.test").is_err() {
-            // Fall back to the default .env when a dedicated test file is not present.
-            let _ = dotenvy::dotenv();
+        let _ = from_filename(".env.test");
+
+        if env::var("JWT_SECRET_KEY").is_err() {
+            unsafe {
+                env::set_var("JWT_SECRET_KEY", "ci-test-jwt-secret");
+            }
+        }
+        if env::var("OIDC_ENABLED").is_err() {
+            unsafe {
+                env::set_var("OIDC_ENABLED", "false");
+            }
+        }
+        if env::var("DATABASE_URL").is_err() {
+            unsafe {
+                env::set_var(
+                    "DATABASE_URL",
+                    "postgres://postgres:postgres@127.0.0.1:5432/grade_o_matic_test",
+                );
+            }
         }
 
         // uncomment below for test debugging

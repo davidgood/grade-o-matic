@@ -22,12 +22,16 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/jorisroovers/gitlint
-    rev:  v0.19.1
+    rev: v0.19.1
     hooks:
       - id: gitlint
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        exclude: ^tests/|^docker-compose\.yml$|^\.sqlx/
-        args: ['--exclude-lines', 'integrity\s*=']
+        exclude: ^tests/|^docker-compose\.yml$|^\.sqlx/|^\.env.example$
+        args:
+          - '--exclude-lines'
+          - 'integrity\s*='
+          - '--exclude-lines'
+          - '^\s*JWT_SECRET_KEY:\s*ci-test-jwt-secret\s*$'
