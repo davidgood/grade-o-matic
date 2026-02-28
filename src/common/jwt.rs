@@ -104,7 +104,7 @@ pub struct AuthPayload {
 /// It takes a user ID as a parameter and returns a Result with the JWT token or an error.
 pub fn make_jwt_token(user_id: &uuid::Uuid) -> Result<String, AppError> {
     let claims = Claims {
-        sub: user_id.clone(),
+        sub: *user_id,
         ..Default::default()
     };
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AppError::TokenCreation)

@@ -181,10 +181,9 @@ async fn request_response_inspector(
     log_enabled: bool,
 ) -> Result<Response, (StatusCode, String)> {
     // inspect forbidden query string
-    if let Some(query) = req.uri().query() {
-        if FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(query)) {
+    if let Some(query) = req.uri().query()
+        && FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(query)) {
             return Err((StatusCode::FORBIDDEN, "Forbidden Request".to_string()));
-        }
     }
 
     let (parts, body) = req.into_parts();

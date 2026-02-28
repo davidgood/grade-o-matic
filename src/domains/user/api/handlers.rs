@@ -118,7 +118,7 @@ pub async fn create_user(
             upload_file_dto = Some(UploadFileDto {
                 file,
                 user_id: None,
-                modified_by: claims.sub.clone(),
+                modified_by: claims.sub,
             });
         }
     }

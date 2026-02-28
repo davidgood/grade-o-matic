@@ -59,7 +59,7 @@ impl FileServiceTrait for FileService {
         );
 
         let create_file_dto = CreateFileDto {
-            user_id: upload_file_dto.user_id.clone(),
+            user_id: upload_file_dto.user_id,
             file_name: unique_filename,
             origin_file_name: file_dto.original_filename.clone(),
             file_relative_path,
@@ -67,7 +67,7 @@ impl FileServiceTrait for FileService {
             content_type: file_dto.content_type.clone(),
             file_size: file_dto.data.len() as u32,
             file_type: FileType::ProfilePicture,
-            modified_by: upload_file_dto.modified_by.clone(),
+            modified_by: upload_file_dto.modified_by,
         };
 
         self.repo
@@ -79,7 +79,7 @@ impl FileServiceTrait for FileService {
             })?;
 
         if let Some(user_id) = &upload_file_dto.user_id {
-            self.get_file_by_user(user_id.clone()).await
+            self.get_file_by_user(*user_id).await
         } else {
             Err(AppError::ValidationError("User ID is missing".into()))
         }
@@ -92,7 +92,7 @@ impl FileServiceTrait for FileService {
     ) -> Result<Option<UploadedFileDto>, AppError> {
         let uploaded_file = self
             .repo
-            .find_by_id(self.pool.clone(), file_id.clone())
+            .find_by_id(self.pool.clone(), file_id)
             .await
             .map_err(|err| {
                 tracing::error!("Error retrieving file: {}", err);
@@ -114,7 +114,7 @@ impl FileServiceTrait for FileService {
 
         let to_delete_file = self
             .repo
-            .find_by_id(self.pool.clone(), file_id.clone())
+            .find_by_id(self.pool.clone(), file_id)
             .await
             .map_err(|err| {
                 tracing::error!("Error retrieving file: {}", err);

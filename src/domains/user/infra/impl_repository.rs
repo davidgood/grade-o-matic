@@ -117,7 +117,7 @@ impl UserRepository for UserRepo {
         user: UpdateUserDto,
     ) -> Result<Option<User>, sqlx::Error> {
         let existing = sqlx::query_as::<_, User>(FIND_USER_INFO_QUERY)
-            .bind(id.clone())
+            .bind(id)
             .fetch_optional(&mut **tx)
             .await?;
 
@@ -135,7 +135,7 @@ impl UserRepository for UserRepo {
             .bind(user.username.clone())
             .bind(user.email.clone())
             .bind(user.modified_by)
-            .bind(id.clone())
+            .bind(id)
             .execute(&mut **tx)
             .await?;
 

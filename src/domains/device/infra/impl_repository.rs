@@ -130,14 +130,14 @@ impl DeviceRepository for DeviceRepo {
 
             builder
                 .push(", modified_by = ")
-                .push_bind(device.modified_by.clone());
+                .push_bind(device.modified_by);
 
-            builder.push(" WHERE id = ").push_bind(&id);
+            builder.push(" WHERE id = ").push_bind(id);
             let query = builder.build();
             query.execute(&mut **tx).await?;
 
             let updated_device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
-                .bind(&id)
+                .bind(id)
                 .fetch_one(&mut **tx)
                 .await?;
 
@@ -167,17 +167,16 @@ impl DeviceRepository for DeviceRepo {
             b.push_bind(
                 device
                     .id
-                    .clone()
-                    .unwrap_or_else(|| Uuid::new_v4()),
+                    .unwrap_or_else(Uuid::new_v4),
             )
-            .push_bind(&user_id)
+            .push_bind(user_id)
             .push_bind(&device.name)
             .push_bind(device.status.to_string())
             .push_bind(device.device_os.to_string())
             .push_bind(now)
-            .push_bind(&modified_by)
+            .push_bind(modified_by)
             .push_bind(now)
-            .push_bind(&modified_by)
+            .push_bind(modified_by)
             .push_bind(now);
         });
 
