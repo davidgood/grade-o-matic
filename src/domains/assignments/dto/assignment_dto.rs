@@ -1,9 +1,9 @@
+use crate::domains::assignments::domain::model::Assignment;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
-
-use crate::domains::assignments::domain::model::Assignment;
+use validator::Validate;
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
 #[dto(from = Assignment)]
@@ -13,4 +13,25 @@ pub struct AssignmentDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
+pub struct CreateAssignmentDto {
+    pub class_id: uuid::Uuid,
+    #[validate(length(max = 255, message = "Title cannot exceed 255 characters"))]
+    pub title: String,
+    pub description: Option<String>,
+    pub due_at: Option<DateTime<Utc>>,
+    pub modified_by: uuid::Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
+pub struct UpdateAssignmentDto {
+    pub id: uuid::Uuid,
+    pub class_id: uuid::Uuid,
+    #[validate(length(max = 255, message = "Title cannot exceed 255 characters"))]
+    pub title: String,
+    pub description: Option<String>,
+    pub due_at: Option<DateTime<Utc>>,
+    pub modified_by: uuid::Uuid,
 }
