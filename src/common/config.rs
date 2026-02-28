@@ -1,7 +1,7 @@
-use regex::Regex;
-use sqlx::{postgres::PgPoolOptions, PgPool};
-use std::{env, time::Duration};
 use anyhow::{Context, Result, anyhow, bail};
+use regex::Regex;
+use sqlx::{PgPool, postgres::PgPoolOptions};
+use std::{env, time::Duration};
 use tokio::time::sleep;
 
 /// Config is a struct that holds the configuration for the application.
@@ -64,7 +64,9 @@ impl Config {
         let oidc_redirect_url = env_var_optional("OIDC_REDIRECT_URL");
 
         if oidc_enabled
-            && (oidc_issuer_url.is_none() || oidc_client_id.is_none() || oidc_redirect_url.is_none())
+            && (oidc_issuer_url.is_none()
+                || oidc_client_id.is_none()
+                || oidc_redirect_url.is_none())
         {
             bail!("OIDC is enabled, but one or more required OIDC_* variables are missing");
         }
@@ -137,10 +139,10 @@ fn env_var_or_default(name: &str, default: &str) -> String {
 
 fn env_var_optional(name: &str) -> Option<String> {
     env::var(name).ok().and_then(|value| {
-       let trimmed = value.trim();
-       if trimmed.is_empty() {
-           None
-       } else {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
             Some(trimmed.to_string())
         }
     })
@@ -165,7 +167,7 @@ where
             .map_err(|err| anyhow!("{name} has an invalid value: {raw} ({err})")),
         Err(_) => Ok(default),
     }
- }
+}
 fn parse_optional<T>(name: &str) -> Result<Option<T>>
 where
     T: std::str::FromStr,
@@ -206,9 +208,6 @@ fn parse_duration_optional(name: &str) -> Result<Option<Duration>> {
 
     Ok(Some(Duration::from_secs(seconds * multiplier)))
 }
-
-
-
 
 /// setup_database initializes the database connection pool.
 pub async fn setup_database(config: &Config) -> Result<PgPool> {

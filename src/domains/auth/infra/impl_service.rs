@@ -4,7 +4,7 @@ use crate::{
     common::{
         error::AppError,
         hash_util,
-        jwt::{make_jwt_token, AuthBody, AuthPayload},
+        jwt::{AuthBody, AuthPayload, make_jwt_token},
     },
     domains::auth::{
         domain::{model::UserAuth, repository::UserAuthRepository, service::AuthServiceTrait},

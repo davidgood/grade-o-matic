@@ -3,7 +3,9 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 
 use crate::domains::{
-    auth::AuthServiceTrait, device::DeviceServiceTrait, file::FileServiceTrait,
+    auth::AuthServiceTrait,
+    device::DeviceServiceTrait,
+    file::FileServiceTrait,
     user::{UserAssetPattern, UserServiceTrait},
 };
 

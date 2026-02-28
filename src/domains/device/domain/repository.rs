@@ -18,7 +18,8 @@ pub trait DeviceRepository: Send + Sync {
     async fn find_all(&self, pool: PgPool) -> Result<Vec<Device>, sqlx::Error>;
 
     /// Finds a device by its unique identifier.
-    async fn find_by_id(&self, pool: PgPool, id: uuid::Uuid) -> Result<Option<Device>, sqlx::Error>;
+    async fn find_by_id(&self, pool: PgPool, id: uuid::Uuid)
+    -> Result<Option<Device>, sqlx::Error>;
 
     /// Creates a new device record in the database within the given transaction.
     async fn create(

@@ -30,7 +30,7 @@ pub trait UserServiceTrait: Send + Sync {
 
     /// Retrieves user list by condition
     async fn get_user_list(&self, search_user_dto: SearchUserDto)
-        -> Result<Vec<UserDto>, AppError>;
+    -> Result<Vec<UserDto>, AppError>;
 
     /// Retrieves all users.
     async fn get_users(&self) -> Result<Vec<UserDto>, AppError>;

@@ -4,9 +4,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::{
+    FromRow, Postgres, Type,
     decode::Decode,
     postgres::{PgTypeInfo, PgValueRef},
-    FromRow, Postgres, Type,
 };
 use std::{fmt, str::FromStr};
 use utoipa::ToSchema;

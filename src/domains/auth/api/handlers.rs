@@ -8,7 +8,7 @@ use crate::{
     domains::auth::dto::auth_dto::AuthUserDto,
 };
 use axum::extract::State;
-use axum::{response::IntoResponse, Json};
+use axum::{Json, response::IntoResponse};
 use std::sync::Arc;
 
 /// this function creates a router for creating user authentication registration

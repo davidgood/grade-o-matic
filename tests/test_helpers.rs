@@ -5,12 +5,12 @@ use std::{
 };
 
 use axum::{
+    Router,
     body::Body,
     http::{
-        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
         Method, Request, Response, StatusCode,
+        header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
     },
-    Router,
 };
 
 use dotenvy::from_filename;
@@ -27,7 +27,7 @@ use grade_o_matic::{
     },
 };
 
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use tower::ServiceExt;
 
 static INIT: Once = Once::new();
@@ -114,9 +114,10 @@ fn load_test_config() -> Result<Config, Box<dyn std::error::Error>> {
 
     match Config::from_env() {
         Ok(config) => Ok(config),
-        Err(err) if err
-            .to_string()
-            .contains("OIDC is enabled, but one or more required OIDC_* variables are missing") =>
+        Err(err)
+            if err.to_string().contains(
+                "OIDC is enabled, but one or more required OIDC_* variables are missing",
+            ) =>
         {
             // Test fallback: disable OIDC if local env enables it without complete OIDC settings.
             unsafe {

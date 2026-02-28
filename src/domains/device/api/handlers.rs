@@ -6,9 +6,9 @@ use crate::domains::device::dto::device_dto::{
     CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateManyDevicesDto,
 };
 use axum::{
+    Extension, Json,
     extract::{Path, State},
     response::IntoResponse,
-    Extension, Json,
 };
 use std::sync::Arc;
 

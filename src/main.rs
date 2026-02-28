@@ -1,8 +1,8 @@
-use grade_o_matic::{app::create_router, common};
 use common::{
     bootstrap::{build_app_state, shutdown_signal},
-    config::{setup_database, Config},
+    config::{Config, setup_database},
 };
+use grade_o_matic::{app::create_router, common};
 use tracing::info;
 
 #[cfg(not(feature = "opentelemetry"))]

@@ -1,4 +1,4 @@
-use axum::{extract::FromRef, routing::post, Router};
+use axum::{Router, extract::FromRef, routing::post};
 use std::sync::Arc;
 
 use super::handlers;

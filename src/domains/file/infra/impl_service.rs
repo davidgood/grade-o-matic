@@ -154,7 +154,10 @@ impl FileServiceTrait for FileService {
 /// Internal helper methods defined on `FileService`.
 impl FileService {
     /// Retrieves file metadata associated with a given user ID from the repository.
-    async fn get_file_by_user(&self, user_id: uuid::Uuid) -> Result<Option<UploadedFileDto>, AppError> {
+    async fn get_file_by_user(
+        &self,
+        user_id: uuid::Uuid,
+    ) -> Result<Option<UploadedFileDto>, AppError> {
         let uploaded_file = self
             .repo
             .find_by_user_id(self.pool.clone(), user_id)

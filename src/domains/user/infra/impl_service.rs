@@ -1,7 +1,7 @@
 use crate::{
     common::error::AppError,
     domains::{
-        file::{dto::file_dto::UploadFileDto, FileServiceTrait},
+        file::{FileServiceTrait, dto::file_dto::UploadFileDto},
         user::{
             domain::{repository::UserRepository, service::UserServiceTrait},
             dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},

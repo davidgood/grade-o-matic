@@ -2,27 +2,20 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use axum::{
+    Router,
     body::Body,
     extract::FromRef,
     http::{Method, Request, StatusCode},
-    Router,
 };
 use chrono::{Duration, Utc};
 use grade_o_matic::{
-    common::{
-        dto::RestApiResponse,
-        error::AppError,
-        jwt::Claims,
-    },
+    common::{dto::RestApiResponse, error::AppError, jwt::Claims},
     domains::device::{
+        DeviceOS, DeviceServiceTrait, DeviceStatus, device_routes,
         dto::device_dto::{
             CreateDeviceDto, DeviceDto, UpdateDeviceDto, UpdateDeviceDtoWithIdDto,
             UpdateManyDevicesDto,
         },
-        device_routes,
-        DeviceOS,
-        DeviceServiceTrait,
-        DeviceStatus,
     },
 };
 use http_body_util::BodyExt;
@@ -120,7 +113,11 @@ impl DeviceServiceTrait for FakeDeviceService {
         Ok(dto)
     }
 
-    async fn update_device(&self, id: Uuid, payload: UpdateDeviceDto) -> Result<DeviceDto, AppError> {
+    async fn update_device(
+        &self,
+        id: Uuid,
+        payload: UpdateDeviceDto,
+    ) -> Result<DeviceDto, AppError> {
         let mut store = self.store.lock().await;
         let device = store
             .devices
@@ -219,7 +216,9 @@ fn auth_claims() -> Claims {
     }
 }
 
-async fn deserialize_json_body<T: serde::de::DeserializeOwned>(body: Body) -> Result<T, Box<dyn std::error::Error>> {
+async fn deserialize_json_body<T: serde::de::DeserializeOwned>(
+    body: Body,
+) -> Result<T, Box<dyn std::error::Error>> {
     let bytes = body.collect().await?.to_bytes();
     Ok(serde_json::from_slice::<T>(&bytes)?)
 }

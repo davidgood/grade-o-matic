@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use axum::{
+    Router,
     body::Body,
     extract::FromRef,
     http::{Method, Request, StatusCode},
-    Router,
 };
 use grade_o_matic::{
     common::{
@@ -13,11 +13,7 @@ use grade_o_matic::{
         error::AppError,
         jwt::{AuthBody, AuthPayload},
     },
-    domains::auth::{
-        dto::auth_dto::AuthUserDto,
-        AuthServiceTrait,
-        user_auth_routes,
-    },
+    domains::auth::{AuthServiceTrait, dto::auth_dto::AuthUserDto, user_auth_routes},
 };
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -53,7 +49,9 @@ impl AuthServiceTrait for FakeAuthService {
     }
 
     async fn login_user(&self, auth_payload: AuthPayload) -> Result<AuthBody, AppError> {
-        if auth_payload.client_id == TEST_CLIENT_ID && auth_payload.client_secret == TEST_CLIENT_SECRET {
+        if auth_payload.client_id == TEST_CLIENT_ID
+            && auth_payload.client_secret == TEST_CLIENT_SECRET
+        {
             return Ok(AuthBody::new(format!("mock-token-for-{TEST_USER_ID}")));
         }
 
@@ -70,10 +68,16 @@ fn create_test_router() -> Router {
         auth_service: Arc::new(FakeAuthService),
     };
 
-    Router::new().nest("/auth", user_auth_routes::<TestState>()).with_state(state)
+    Router::new()
+        .nest("/auth", user_auth_routes::<TestState>())
+        .with_state(state)
 }
 
-async fn request_with_body<T: serde::Serialize>(method: Method, uri: &str, payload: &T) -> axum::response::Response {
+async fn request_with_body<T: serde::Serialize>(
+    method: Method,
+    uri: &str,
+    payload: &T,
+) -> axum::response::Response {
     let json_payload = serde_json::to_string(payload).expect("Failed to serialize payload");
     let request: Request<Body> = Request::builder()
         .method(method)
@@ -85,7 +89,9 @@ async fn request_with_body<T: serde::Serialize>(method: Method, uri: &str, paylo
     create_test_router().oneshot(request).await.unwrap()
 }
 
-async fn deserialize_json_body<T: serde::de::DeserializeOwned>(body: Body) -> Result<T, Box<dyn std::error::Error>> {
+async fn deserialize_json_body<T: serde::de::DeserializeOwned>(
+    body: Body,
+) -> Result<T, Box<dyn std::error::Error>> {
     let bytes = body.collect().await?.to_bytes();
     Ok(serde_json::from_slice::<T>(&bytes)?)
 }

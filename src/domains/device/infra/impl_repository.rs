@@ -55,7 +55,11 @@ impl DeviceRepository for DeviceRepo {
         Ok(devices)
     }
 
-    async fn find_by_id(&self, pool: PgPool, id: uuid::Uuid) -> Result<Option<Device>, sqlx::Error> {
+    async fn find_by_id(
+        &self,
+        pool: PgPool,
+        id: uuid::Uuid,
+    ) -> Result<Option<Device>, sqlx::Error> {
         let device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
             .bind(id)
             .fetch_optional(&pool)
@@ -164,20 +168,16 @@ impl DeviceRepository for DeviceRepo {
         let now = chrono::Utc::now().naive_utc();
 
         builder.push_values(update_devices.devices.iter(), |mut b, device| {
-            b.push_bind(
-                device
-                    .id
-                    .unwrap_or_else(Uuid::new_v4),
-            )
-            .push_bind(user_id)
-            .push_bind(&device.name)
-            .push_bind(device.status.to_string())
-            .push_bind(device.device_os.to_string())
-            .push_bind(now)
-            .push_bind(modified_by)
-            .push_bind(now)
-            .push_bind(modified_by)
-            .push_bind(now);
+            b.push_bind(device.id.unwrap_or_else(Uuid::new_v4))
+                .push_bind(user_id)
+                .push_bind(&device.name)
+                .push_bind(device.status.to_string())
+                .push_bind(device.device_os.to_string())
+                .push_bind(now)
+                .push_bind(modified_by)
+                .push_bind(now)
+                .push_bind(modified_by)
+                .push_bind(now);
         });
 
         builder.push(

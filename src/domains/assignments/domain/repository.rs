@@ -1,6 +1,6 @@
+use super::model::Assignment;
 use async_trait::async_trait;
 use sqlx::PgPool;
-use super::model::Assignment;
 
 #[async_trait]
 pub trait AssignmentRepositoryTrait: Send + Sync {

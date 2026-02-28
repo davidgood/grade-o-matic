@@ -1,9 +1,9 @@
 use axum::{
+    Router,
     body::Body,
-    http::{header::AUTHORIZATION, Method, Request, StatusCode},
+    http::{Method, Request, StatusCode, header::AUTHORIZATION},
     middleware,
     routing::get,
-    Router,
 };
 use grade_o_matic::common::{config::Config, jwt};
 use tower::ServiceExt;
@@ -23,9 +23,9 @@ fn load_assets_test_config() -> Config {
     match Config::from_env() {
         Ok(config) => config,
         Err(err)
-            if err
-                .to_string()
-                .contains("OIDC is enabled, but one or more required OIDC_* variables are missing") =>
+            if err.to_string().contains(
+                "OIDC is enabled, but one or more required OIDC_* variables are missing",
+            ) =>
         {
             // Keep asset tests independent from unrelated auth provider config.
             unsafe {

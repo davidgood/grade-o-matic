@@ -19,7 +19,7 @@ mod infra {
 }
 
 // Re-export commonly used items for convenience
-pub use api::routes::{device_routes, DeviceApiDoc};
+pub use api::routes::{DeviceApiDoc, device_routes};
 pub use domain::model::{DeviceOS, DeviceStatus};
 pub use domain::service::DeviceServiceTrait;
 pub use infra::impl_service::DeviceService;

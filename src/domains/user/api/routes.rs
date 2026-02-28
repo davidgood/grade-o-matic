@@ -1,21 +1,19 @@
 use super::handlers::*;
-use crate::{
-    domains::user::{
-        dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
-        UserAssetPattern, UserServiceTrait,
-    },
+use crate::domains::user::{
+    UserAssetPattern, UserServiceTrait,
+    dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
 };
 
 use axum::{
+    Router,
     extract::FromRef,
     routing::{delete, get, post, put},
-    Router,
 };
 use std::sync::Arc;
 
 use utoipa::{
-    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     OpenApi,
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
 };
 
 #[derive(OpenApi)]

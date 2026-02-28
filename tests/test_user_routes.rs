@@ -2,12 +2,12 @@ use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use axum::{
+    Router,
     body::Body,
     extract::{FromRef, Path},
     http::{Method, Request, StatusCode},
     response::IntoResponse,
     routing::delete,
-    Router,
 };
 use chrono::Utc;
 use grade_o_matic::{
@@ -15,10 +15,9 @@ use grade_o_matic::{
     domains::{
         file::dto::file_dto::UploadFileDto,
         user::{
+            UserAssetPattern, UserServiceTrait,
             dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
             user_routes,
-            UserAssetPattern,
-            UserServiceTrait,
         },
     },
 };
@@ -101,7 +100,10 @@ impl UserServiceTrait for FakeUserService {
             .ok_or_else(|| AppError::NotFound("User not found".into()))
     }
 
-    async fn get_user_list(&self, search_user_dto: SearchUserDto) -> Result<Vec<UserDto>, AppError> {
+    async fn get_user_list(
+        &self,
+        search_user_dto: SearchUserDto,
+    ) -> Result<Vec<UserDto>, AppError> {
         let store = self.store.lock().await;
         let mut users: Vec<UserDto> = store.users.values().cloned().collect();
 
@@ -273,7 +275,8 @@ async fn create_user(app: &Router) -> (CreateUserMultipartDto, UserDto) {
     .as_bytes()
     .to_vec();
 
-    let response = request_with_auth_and_multipart(app, Method::POST, "/user", multipart_body).await;
+    let response =
+        request_with_auth_and_multipart(app, Method::POST, "/user", multipart_body).await;
     let (parts, body) = response.into_parts();
     assert_eq!(parts.status, StatusCode::OK);
 
@@ -293,7 +296,8 @@ async fn create_user_with_file(app: &Router) -> (CreateUserMultipartDto, UserDto
         profile_picture: Some(image_file.to_string()),
     };
 
-    let file_bytes = std::fs::read(format!("tests/asset/{image_file}")).expect("failed reading test asset");
+    let file_bytes =
+        std::fs::read(format!("tests/asset/{image_file}")).expect("failed reading test asset");
 
     let mut multipart_body = Vec::new();
     use std::io::Write;
@@ -318,12 +322,17 @@ async fn create_user_with_file(app: &Router) -> (CreateUserMultipartDto, UserDto
     multipart_body.extend_from_slice(&file_bytes);
     write!(&mut multipart_body, "\r\n------XYZ--\r\n").unwrap();
 
-    let response = request_with_auth_and_multipart(app, Method::POST, "/user", multipart_body).await;
+    let response =
+        request_with_auth_and_multipart(app, Method::POST, "/user", multipart_body).await;
     let (parts, body) = response.into_parts();
     assert_eq!(parts.status, StatusCode::OK);
 
     let response_body: RestApiResponse<UserDto> = deserialize_json_body(body).await.unwrap();
-    (payload, response_body.0.data.unwrap(), image_file.to_string())
+    (
+        payload,
+        response_body.0.data.unwrap(),
+        image_file.to_string(),
+    )
 }
 
 #[tokio::test]

@@ -1,13 +1,13 @@
 // This module provides utilities to set up OpenTelemetry tracing using the OTLP exporter.
 // It configures the tracer provider, resource attributes, and integrates with tracing-subscriber.
 use opentelemetry::trace::TracerProvider;
-use opentelemetry::{global, KeyValue};
+use opentelemetry::{KeyValue, global};
 use opentelemetry_otlp::{Protocol, WithExportConfig};
-use opentelemetry_sdk::{trace::SdkTracerProvider, Resource};
+use opentelemetry_sdk::{Resource, trace::SdkTracerProvider};
 use std::{error::Error, sync::OnceLock};
 use tracing_opentelemetry::OpenTelemetryLayer;
 use tracing_subscriber::fmt::format::FmtSpan;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use tracing_subscriber::{EnvFilter, Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 // get_resource initializes a global Resource containing service name and version.
 // Uses OnceLock to ensure the resource is created only once.

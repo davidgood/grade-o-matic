@@ -1,14 +1,14 @@
 use axum::{
+    Router,
     body::{Body, Bytes},
     error_handling::HandleErrorLayer,
     extract::{DefaultBodyLimit, Request},
     http::{
-        header::{AUTHORIZATION, CONTENT_TYPE},
         Method, StatusCode,
+        header::{AUTHORIZATION, CONTENT_TYPE},
     },
     middleware::{self, Next},
     response::{IntoResponse, Response},
-    Router,
 };
 use http_body_util::BodyExt;
 
@@ -25,15 +25,15 @@ use utoipa::OpenApi;
 use crate::{
     common::{
         app_state::AppState,
-        error::{handle_error, AppError},
+        error::{AppError, handle_error},
         jwt,
     },
     domains::{
         assignments::assignment_routes,
-        auth::{user_auth_routes, UserAuthApiDoc},
-        device::{device_routes, DeviceApiDoc},
-        file::{file_routes, FileApiDoc},
-        user::{user_routes, UserApiDoc},
+        auth::{UserAuthApiDoc, user_auth_routes},
+        device::{DeviceApiDoc, device_routes},
+        file::{FileApiDoc, file_routes},
+        user::{UserApiDoc, user_routes},
     },
     web,
 };
@@ -182,8 +182,9 @@ async fn request_response_inspector(
 ) -> Result<Response, (StatusCode, String)> {
     // inspect forbidden query string
     if let Some(query) = req.uri().query()
-        && FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(query)) {
-            return Err((StatusCode::FORBIDDEN, "Forbidden Request".to_string()));
+        && FORBIDDEN_PATTERNS.iter().any(|re| re.is_match(query))
+    {
+        return Err((StatusCode::FORBIDDEN, "Forbidden Request".to_string()));
     }
 
     let (parts, body) = req.into_parts();

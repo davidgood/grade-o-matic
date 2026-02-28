@@ -6,21 +6,21 @@ use crate::{
     domains::{
         file::dto::file_dto::UploadFileDto,
         user::{
-            dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
             UserAssetPattern, UserServiceTrait,
+            dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
         },
     },
 };
 
 use axum::{
+    Extension, Json,
     extract::{Multipart, State},
     response::IntoResponse,
-    Extension, Json,
 };
 
-use validator::Validate;
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
+use validator::Validate;
 
 #[utoipa::path(
     get,
@@ -123,7 +123,9 @@ pub async fn create_user(
         }
     }
 
-    let user = user_service.create_user(create_user, upload_file_dto.as_mut()).await?;
+    let user = user_service
+        .create_user(create_user, upload_file_dto.as_mut())
+        .await?;
 
     Ok(RestApiResponse::success(user))
 }

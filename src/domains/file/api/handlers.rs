@@ -2,7 +2,7 @@ use crate::common::{app_state::AppState, dto::RestApiResponse, error::AppError};
 use axum::{
     body::Body,
     extract::{Path, State},
-    http::{header, StatusCode},
+    http::{StatusCode, header},
     response::{IntoResponse, Response},
 };
 

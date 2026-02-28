@@ -1,7 +1,7 @@
 use axum::{
+    BoxError,
     http::StatusCode,
     response::{IntoResponse, Response},
-    BoxError,
 };
 
 use sqlx::Error as SqlxError;
