@@ -16,6 +16,7 @@ use axum::{
 };
 
 use validator::Validate;
+use uuid::Uuid;
 
 #[utoipa::path(
     get,
@@ -25,7 +26,7 @@ use validator::Validate;
 )]
 pub async fn get_user_by_id(
     State(state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let user = state.user_service.get_user_by_id(id).await?;
     Ok(RestApiResponse::success(user))
@@ -73,7 +74,7 @@ pub async fn create_user(
     Extension(claims): Extension<Claims>,
     multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
-    let modified_by = claims.sub.clone().to_string();
+    let modified_by = claims.sub;
 
     let (mut fields, mut files) =
         parse_multipart_to_maps(multipart, &state.config.asset_allowed_extensions_pattern).await?;
@@ -90,7 +91,7 @@ pub async fn create_user(
     let create_user = CreateUserMultipartDto {
         username,
         email,
-        modified_by: modified_by.clone(),
+        modified_by,
         profile_picture: None,
     };
 
@@ -111,7 +112,7 @@ pub async fn create_user(
             upload_file_dto = Some(UploadFileDto {
                 file,
                 user_id: None,
-                modified_by,
+                modified_by: claims.sub.clone(),
             });
         }
     }
@@ -134,7 +135,7 @@ pub async fn create_user(
 pub async fn update_user(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
     Json(payload): Json<UpdateUserDto>,
 ) -> Result<impl IntoResponse, AppError> {
     payload.validate().map_err(|err| {
@@ -144,7 +145,7 @@ pub async fn update_user(
 
     // Set the modified_by field to the current user's ID.
     let mut payload = payload;
-    payload.modified_by = claims.sub.clone().to_string();
+    payload.modified_by = claims.sub;
 
     let user = state.user_service.update_user(id, payload).await?;
     Ok(RestApiResponse::success(user))
@@ -158,7 +159,7 @@ pub async fn update_user(
 )]
 pub async fn delete_user(
     State(state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let message = state.user_service.delete_user(id).await?;
     Ok(RestApiResponse::success_with_message(message, ()))

@@ -45,7 +45,7 @@ impl Keys {
 /// The `Claims` struct is used to encode and decode the JWT tokens.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,
+    pub sub: uuid::Uuid,
     pub exp: usize,
     pub iat: usize,
 }
@@ -67,7 +67,7 @@ impl Default for Claims {
         let exp: usize = (now + expire).timestamp() as usize;
         let iat: usize = now.timestamp() as usize;
         Claims {
-            sub: String::new(),
+            sub: uuid::Uuid::new_v4(),
             exp,
             iat,
         }
@@ -102,9 +102,9 @@ pub struct AuthPayload {
 
 /// make_jwt_token is a function that creates a JWT token.
 /// It takes a user ID as a parameter and returns a Result with the JWT token or an error.
-pub fn make_jwt_token(user_id: &str) -> Result<String, AppError> {
+pub fn make_jwt_token(user_id: &uuid::Uuid) -> Result<String, AppError> {
     let claims = Claims {
-        sub: user_id.to_string(),
+        sub: user_id.clone(),
         ..Default::default()
     };
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AppError::TokenCreation)

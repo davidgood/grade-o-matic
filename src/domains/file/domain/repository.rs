@@ -23,20 +23,20 @@ pub trait FileRepository {
     async fn find_by_id(
         &self,
         pool: PgPool,
-        id: String,
+        id: uuid::Uuid,
     ) -> Result<Option<UploadedFile>, sqlx::Error>;
 
     /// Finds a file record associated with a specific user ID.
     async fn find_by_user_id(
         &self,
         pool: PgPool,
-        user_id: String,
+        user_id: uuid::Uuid,
     ) -> Result<Option<UploadedFile>, sqlx::Error>;
 
     /// Deletes a file record by its unique identifier using a transaction.
     async fn delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: uuid::Uuid,
     ) -> Result<bool, sqlx::Error>;
 }

@@ -59,13 +59,9 @@ impl UserRepository for UserRepo {
     ) -> Result<Vec<User>, sqlx::Error> {
         let mut builder = QueryBuilder::<_>::new(FIND_USER_QUERY);
 
-        if let Some(s) = search_user_dto
-            .id
-            .as_deref()
-            .filter(|s| !s.trim().is_empty())
-        {
+        if let Some(id) = search_user_dto.id {
             builder.push(" AND u.id = ");
-            builder.push_bind(s);
+            builder.push_bind(id);
         }
 
         if let Some(s) = search_user_dto
@@ -82,7 +78,7 @@ impl UserRepository for UserRepo {
         Ok(users)
     }
 
-    async fn find_by_id(&self, pool: PgPool, id: String) -> Result<Option<User>, sqlx::Error> {
+    async fn find_by_id(&self, pool: PgPool, id: Uuid) -> Result<Option<User>, sqlx::Error> {
         let user = sqlx::query_as::<_, User>(FIND_USER_INFO_QUERY)
             .bind(id)
             .fetch_optional(&pool)
@@ -94,20 +90,20 @@ impl UserRepository for UserRepo {
         &self,
         tx: &mut Transaction<'_, Postgres>,
         user: CreateUserMultipartDto,
-    ) -> Result<String, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
+    ) -> Result<Uuid, sqlx::Error> {
+        let id = Uuid::new_v4();
 
-        sqlx::query!(
+        sqlx::query(
             r#"
                 INSERT INTO users (id, username, email, created_by, modified_by)
                 VALUES ($1, $2, $3, $4, $5)
                 "#,
-            id.clone(),
-            user.username.clone(),
-            user.email.clone(),
-            user.modified_by.clone(),
-            user.modified_by
         )
+        .bind(id)
+        .bind(user.username.clone())
+        .bind(user.email.clone())
+        .bind(user.modified_by)
+        .bind(user.modified_by)
         .execute(&mut **tx)
         .await?;
 
@@ -117,7 +113,7 @@ impl UserRepository for UserRepo {
     async fn update(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: Uuid,
         user: UpdateUserDto,
     ) -> Result<Option<User>, sqlx::Error> {
         let existing = sqlx::query_as::<_, User>(FIND_USER_INFO_QUERY)
@@ -126,7 +122,7 @@ impl UserRepository for UserRepo {
             .await?;
 
         if existing.is_some() {
-            sqlx::query!(
+            sqlx::query(
                 r#"
                 UPDATE users 
                 SET username = $1,
@@ -135,11 +131,11 @@ impl UserRepository for UserRepo {
                     modified_at = NOW() 
                 WHERE id = $4
                 "#,
-                user.username.clone(),
-                user.email.clone(),
-                user.modified_by.clone(),
-                id.clone()
             )
+            .bind(user.username.clone())
+            .bind(user.email.clone())
+            .bind(user.modified_by)
+            .bind(id.clone())
             .execute(&mut **tx)
             .await?;
 
@@ -156,9 +152,10 @@ impl UserRepository for UserRepo {
     async fn delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: Uuid,
     ) -> Result<bool, sqlx::Error> {
-        let res = sqlx::query!(r#"DELETE FROM users WHERE id = $1"#, id)
+        let res = sqlx::query(r#"DELETE FROM users WHERE id = $1"#)
+            .bind(id)
             .execute(&mut **tx)
             .await?;
         Ok(res.rows_affected() > 0)

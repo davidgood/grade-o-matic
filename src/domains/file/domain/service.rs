@@ -30,9 +30,9 @@ pub trait FileServiceTrait: Send + Sync {
     ) -> Result<Option<UploadedFileDto>, AppError>;
 
     /// Retrieves file metadata by its file ID.
-    async fn get_file_metadata(&self, file_id: String)
+    async fn get_file_metadata(&self, file_id: uuid::Uuid)
         -> Result<Option<UploadedFileDto>, AppError>;
 
     /// Deletes a file by its file ID and returns a confirmation message.
-    async fn delete_file(&self, file_id: String) -> Result<String, AppError>;
+    async fn delete_file(&self, file_id: uuid::Uuid) -> Result<String, AppError>;
 }

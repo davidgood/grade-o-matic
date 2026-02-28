@@ -3,12 +3,12 @@ use sqlx::FromRow;
 /// Domain model representing a user in the application.
 #[derive(Debug, Clone, FromRow)]
 pub struct User {
-    pub id: String,
+    pub id: uuid::Uuid,
     pub username: String,
     pub email: Option<String>,
-    pub created_by: Option<String>,
+    pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
-    pub modified_by: Option<String>,
+    pub modified_by: Option<uuid::Uuid>,
     pub modified_at: Option<DateTime<Utc>>,
     pub file_id: Option<String>,
     pub origin_file_name: Option<String>,

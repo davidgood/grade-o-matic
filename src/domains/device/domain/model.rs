@@ -135,14 +135,14 @@ impl Type<Postgres> for DeviceOS {
 /// Domain model representing a device entity.
 #[derive(Debug, Clone, FromRow)]
 pub struct Device {
-    pub id: String,
-    pub user_id: String,
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
     pub registered_at: Option<DateTime<Utc>>,
-    pub created_by: Option<String>,
+    pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
-    pub modified_by: Option<String>,
+    pub modified_by: Option<uuid::Uuid>,
     pub modified_at: Option<DateTime<Utc>>,
 }

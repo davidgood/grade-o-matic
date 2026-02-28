@@ -20,7 +20,7 @@ use axum::{
 )]
 pub async fn get_device_by_id(
     State(state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let device = state.device_service.get_device_by_id(id).await?;
     Ok(RestApiResponse::success(device))
@@ -56,7 +56,7 @@ pub async fn create_device(
 ) -> Result<impl IntoResponse, AppError> {
     // Set the modified_by field to the current user's ID.
     let mut payload = payload;
-    payload.modified_by = claims.sub.clone().to_string();
+    payload.modified_by = claims.sub.clone();
 
     let device = state.device_service.create_device(payload).await?;
     Ok(RestApiResponse::success(device))
@@ -75,12 +75,12 @@ pub async fn create_device(
 pub async fn update_device(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
     Json(payload): Json<UpdateDeviceDto>,
 ) -> Result<impl IntoResponse, AppError> {
     // Set the modified_by field to the current user's ID.
     let mut payload = payload;
-    payload.modified_by = claims.sub.clone().to_string();
+    payload.modified_by = claims.sub.clone();
 
     let device = state.device_service.update_device(id, payload).await?;
     Ok(RestApiResponse::success(device))
@@ -97,7 +97,7 @@ pub async fn update_device(
 )]
 pub async fn delete_device(
     State(state): State<AppState>,
-    axum::extract::Path(id): axum::extract::Path<String>,
+    axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let message = state.device_service.delete_device(id).await?;
 
@@ -117,10 +117,10 @@ pub async fn delete_device(
 pub async fn update_many_devices(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Path(user_id): Path<String>,
+    Path(user_id): Path<uuid::Uuid>,
     Json(payload): Json<UpdateManyDevicesDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    let modified_by = claims.sub.clone().to_string();
+    let modified_by = claims.sub.clone();
 
     let message = state
         .device_service

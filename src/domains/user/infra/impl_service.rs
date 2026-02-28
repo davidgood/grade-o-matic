@@ -12,6 +12,7 @@ use crate::{
 use async_trait::async_trait;
 use sqlx::PgPool;
 use std::sync::Arc;
+use uuid::Uuid;
 
 /// Service struct for handling user-related operations
 /// such as creating, updating, deleting, and fetching users.
@@ -38,7 +39,7 @@ impl UserServiceTrait for UserService {
     }
 
     /// Retrieves a user by their ID.
-    async fn get_user_by_id(&self, id: String) -> Result<UserDto, AppError> {
+    async fn get_user_by_id(&self, id: Uuid) -> Result<UserDto, AppError> {
         match self.repo.find_by_id(self.pool.clone(), id).await {
             Ok(Some(user)) => Ok(UserDto::from(user)),
             Ok(None) => Err(AppError::NotFound("User not found".into())),
@@ -104,7 +105,7 @@ impl UserServiceTrait for UserService {
         };
 
         if let Some(upload_file_dto) = upload_file_dto {
-            upload_file_dto.user_id = Some(user_id.clone());
+            upload_file_dto.user_id = Some(user_id);
             self.file_service
                 .process_profile_picture_upload(&mut tx, upload_file_dto)
                 .await?;
@@ -123,10 +124,10 @@ impl UserServiceTrait for UserService {
     }
 
     /// Updates an existing user.
-    async fn update_user(&self, id: String, payload: UpdateUserDto) -> Result<UserDto, AppError> {
+    async fn update_user(&self, id: Uuid, payload: UpdateUserDto) -> Result<UserDto, AppError> {
         let mut tx = self.pool.begin().await?;
 
-        match self.repo.update(&mut tx, id.to_string(), payload).await {
+        match self.repo.update(&mut tx, id, payload).await {
             Ok(Some(user)) => {
                 tx.commit().await?;
                 Ok(UserDto::from(user))
@@ -144,10 +145,10 @@ impl UserServiceTrait for UserService {
     }
 
     /// Deletes a user by their ID.
-    async fn delete_user(&self, id: String) -> Result<String, AppError> {
+    async fn delete_user(&self, id: Uuid) -> Result<String, AppError> {
         let mut tx = self.pool.begin().await?;
 
-        match self.repo.delete(&mut tx, id.to_string()).await {
+        match self.repo.delete(&mut tx, id).await {
             Ok(true) => {
                 tx.commit().await?;
                 Ok("User deleted".into())

@@ -7,6 +7,7 @@ use super::model::User;
 
 use async_trait::async_trait;
 use sqlx::{PgPool, Postgres, Transaction};
+use uuid::Uuid;
 
 #[async_trait]
 /// Trait representing repository-level operations for user entities.
@@ -16,7 +17,7 @@ pub trait UserRepository: Send + Sync {
     async fn find_all(&self, pool: PgPool) -> Result<Vec<User>, sqlx::Error>;
 
     /// Finds a user by their unique identifier.
-    async fn find_by_id(&self, pool: PgPool, id: String) -> Result<Option<User>, sqlx::Error>;
+    async fn find_by_id(&self, pool: PgPool, id: Uuid) -> Result<Option<User>, sqlx::Error>;
 
     /// Finds user list by condition
     async fn find_list(
@@ -30,13 +31,13 @@ pub trait UserRepository: Send + Sync {
         &self,
         tx: &mut Transaction<'_, Postgres>,
         user: CreateUserMultipartDto,
-    ) -> Result<String, sqlx::Error>;
+    ) -> Result<Uuid, sqlx::Error>;
 
     /// Updates an existing user record using the provided data.
     async fn update(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: Uuid,
         user: UpdateUserDto,
     ) -> Result<Option<User>, sqlx::Error>;
 
@@ -44,6 +45,6 @@ pub trait UserRepository: Send + Sync {
     async fn delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: Uuid,
     ) -> Result<bool, sqlx::Error>;
 }

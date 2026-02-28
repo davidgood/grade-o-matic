@@ -88,7 +88,7 @@ impl FileServiceTrait for FileService {
     /// Retrieves the metadata of a file by its id.
     async fn get_file_metadata(
         &self,
-        file_id: String,
+        file_id: uuid::Uuid,
     ) -> Result<Option<UploadedFileDto>, AppError> {
         let uploaded_file = self
             .repo
@@ -109,7 +109,7 @@ impl FileServiceTrait for FileService {
     /// Deletes a file by its id.
     /// Removes the file from the filesystem and deletes its metadata from the database.
     /// Returns a success message if the deletion was successful.
-    async fn delete_file(&self, file_id: String) -> Result<String, AppError> {
+    async fn delete_file(&self, file_id: uuid::Uuid) -> Result<String, AppError> {
         let mut tx = self.pool.begin().await?;
 
         let to_delete_file = self
@@ -154,7 +154,7 @@ impl FileServiceTrait for FileService {
 /// Internal helper methods defined on `FileService`.
 impl FileService {
     /// Retrieves file metadata associated with a given user ID from the repository.
-    async fn get_file_by_user(&self, user_id: String) -> Result<Option<UploadedFileDto>, AppError> {
+    async fn get_file_by_user(&self, user_id: uuid::Uuid) -> Result<Option<UploadedFileDto>, AppError> {
         let uploaded_file = self
             .repo
             .find_by_user_id(self.pool.clone(), user_id)

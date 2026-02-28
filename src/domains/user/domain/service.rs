@@ -11,6 +11,7 @@ use crate::domains::file::FileServiceTrait;
 use async_trait::async_trait;
 use sqlx::PgPool;
 use std::sync::Arc;
+use uuid::Uuid;
 
 #[async_trait]
 /// Trait defining business operations for user management.
@@ -25,7 +26,7 @@ pub trait UserServiceTrait: Send + Sync {
         Self: Sized;
 
     /// Retrieves a user by their unique identifier.
-    async fn get_user_by_id(&self, id: String) -> Result<UserDto, AppError>;
+    async fn get_user_by_id(&self, id: Uuid) -> Result<UserDto, AppError>;
 
     /// Retrieves user list by condition
     async fn get_user_list(&self, search_user_dto: SearchUserDto)
@@ -42,8 +43,8 @@ pub trait UserServiceTrait: Send + Sync {
     ) -> Result<UserDto, AppError>;
 
     /// Updates an existing user with the given payload.
-    async fn update_user(&self, id: String, payload: UpdateUserDto) -> Result<UserDto, AppError>;
+    async fn update_user(&self, id: Uuid, payload: UpdateUserDto) -> Result<UserDto, AppError>;
 
     /// Deletes a user by their unique identifier.
-    async fn delete_user(&self, id: String) -> Result<String, AppError>;
+    async fn delete_user(&self, id: Uuid) -> Result<String, AppError>;
 }

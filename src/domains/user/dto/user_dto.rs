@@ -9,13 +9,13 @@ use crate::domains::user::domain::model::User;
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
 #[dto(from = User)]
 pub struct UserDto {
-    pub id: String,
+    pub id: uuid::Uuid,
     pub username: String,
     pub email: Option<String>,
-    pub created_by: Option<String>,
+    pub created_by: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format::option")]
     pub created_at: Option<DateTime<Utc>>,
-    pub modified_by: Option<String>,
+    pub modified_by: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format::option")]
     pub modified_at: Option<DateTime<Utc>>,
     pub file_id: Option<String>,
@@ -24,7 +24,7 @@ pub struct UserDto {
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct SearchUserDto {
-    pub id: Option<String>,
+    pub id: Option<uuid::Uuid>,
     pub username: Option<String>,
     pub email: Option<String>,
 }
@@ -34,7 +34,7 @@ pub struct CreateUserMultipartDto {
     pub username: String,
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
-    pub modified_by: String,
+    pub modified_by: uuid::Uuid,
     // Optional profile picture file provided as binary data.
     #[allow(dead_code)]
     #[schema(value_type = String, format = "binary", example = "profile_picture.png")]
@@ -47,5 +47,5 @@ pub struct UpdateUserDto {
     pub username: String,
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
-    pub modified_by: String,
+    pub modified_by: uuid::Uuid,
 }

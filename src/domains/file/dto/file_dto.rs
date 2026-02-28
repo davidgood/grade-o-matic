@@ -14,7 +14,7 @@ pub struct FileDto {
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct CreateFileDto {
-    pub user_id: Option<String>,
+    pub user_id: Option<uuid::Uuid>,
     pub file_name: String,
     pub origin_file_name: String,
     pub file_relative_path: String,
@@ -22,21 +22,21 @@ pub struct CreateFileDto {
     pub content_type: String,
     pub file_size: u32,
     pub file_type: FileType,
-    pub modified_by: String,
+    pub modified_by: uuid::Uuid,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct UploadFileDto {
     pub file: FileDto,
-    pub user_id: Option<String>,
-    pub modified_by: String,
+    pub user_id: Option<uuid::Uuid>,
+    pub modified_by: uuid::Uuid,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
 #[dto(from = UploadedFile)]
 pub struct UploadedFileDto {
-    pub id: String,
-    pub user_id: String,
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
     pub file_name: String,
     pub origin_file_name: String,
     pub file_relative_path: String,
@@ -44,10 +44,10 @@ pub struct UploadedFileDto {
     pub content_type: String,
     pub file_size: i64,
     pub file_type: FileType,
-    pub created_by: Option<String>,
+    pub created_by: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format")]
     pub created_at: DateTime<Utc>,
-    pub modified_by: Option<String>,
+    pub modified_by: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format")]
     pub modified_at: DateTime<Utc>,
 }

@@ -1,3 +1,4 @@
+pub mod assignments;
 pub mod auth;
 pub mod device;
 pub mod file;

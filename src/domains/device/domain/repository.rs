@@ -18,7 +18,7 @@ pub trait DeviceRepository: Send + Sync {
     async fn find_all(&self, pool: PgPool) -> Result<Vec<Device>, sqlx::Error>;
 
     /// Finds a device by its unique identifier.
-    async fn find_by_id(&self, pool: PgPool, id: String) -> Result<Option<Device>, sqlx::Error>;
+    async fn find_by_id(&self, pool: PgPool, id: uuid::Uuid) -> Result<Option<Device>, sqlx::Error>;
 
     /// Creates a new device record in the database within the given transaction.
     async fn create(
@@ -31,7 +31,7 @@ pub trait DeviceRepository: Send + Sync {
     async fn update(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: uuid::Uuid,
         device: UpdateDeviceDto,
     ) -> Result<Option<Device>, sqlx::Error>;
 
@@ -39,8 +39,8 @@ pub trait DeviceRepository: Send + Sync {
     async fn update_many(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        user_id: String,
-        modified_by: String,
+        user_id: uuid::Uuid,
+        modified_by: uuid::Uuid,
         update_devices: UpdateManyDevicesDto,
     ) -> Result<(), sqlx::Error>;
 
@@ -48,6 +48,6 @@ pub trait DeviceRepository: Send + Sync {
     async fn delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: uuid::Uuid,
     ) -> Result<bool, sqlx::Error>;
 }

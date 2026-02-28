@@ -8,17 +8,17 @@ use crate::domains::device::domain::model::{Device, DeviceOS, DeviceStatus};
 #[derive(PartialEq, Debug, Deserialize, Serialize, ToSchema, DtoFrom)]
 #[dto(from = Device)]
 pub struct DeviceDto {
-    pub id: String,
-    pub user_id: String,
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
     #[serde(with = "crate::common::ts_format::option")]
     pub registered_at: Option<DateTime<Utc>>,
-    pub created_by: Option<String>,
+    pub created_by: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format::option")]
     pub created_at: Option<DateTime<Utc>>,
-    pub modified_by: Option<String>,
+    pub modified_by: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format::option")]
     pub modified_at: Option<DateTime<Utc>>,
 }
@@ -26,23 +26,23 @@ pub struct DeviceDto {
 #[derive(PartialEq, Debug, Deserialize, serde::Serialize, ToSchema)]
 pub struct CreateDeviceDto {
     pub name: String,
-    pub user_id: String,
+    pub user_id: uuid::Uuid,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,
     #[serde(with = "crate::common::ts_format::option")]
     pub registered_at: Option<DateTime<Utc>>,
-    pub modified_by: String,
+    pub modified_by: uuid::Uuid,
 }
 
 #[derive(PartialEq, Debug, Deserialize, serde::Serialize, ToSchema)]
 pub struct UpdateDeviceDto {
     pub name: Option<String>,
-    pub user_id: Option<String>,
+    pub user_id: Option<uuid::Uuid>,
     pub device_os: Option<DeviceOS>,
     pub status: Option<DeviceStatus>,
     #[serde(with = "crate::common::ts_format::option")]
     pub registered_at: Option<DateTime<Utc>>,
-    pub modified_by: String,
+    pub modified_by: uuid::Uuid,
 }
 
 #[derive(Debug, Deserialize, serde::Serialize, ToSchema)]
@@ -52,7 +52,7 @@ pub struct UpdateManyDevicesDto {
 
 #[derive(PartialEq, Debug, Deserialize, serde::Serialize, ToSchema)]
 pub struct UpdateDeviceDtoWithIdDto {
-    pub id: Option<String>,
+    pub id: Option<uuid::Uuid>,
     pub name: String,
     pub device_os: DeviceOS,
     pub status: DeviceStatus,

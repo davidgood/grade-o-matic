@@ -29,11 +29,13 @@ use crate::{
         jwt,
     },
     domains::{
+        assignments::assignment_routes,
         auth::{user_auth_routes, UserAuthApiDoc},
         device::{device_routes, DeviceApiDoc},
         file::{file_routes, FileApiDoc},
         user::{user_routes, UserApiDoc},
     },
+    web,
 };
 
 use utoipa_swagger_ui::SwaggerUi;
@@ -75,10 +77,11 @@ pub fn create_router(state: AppState) -> Router {
     // /auth routes (login, register, refresh, etc.) — no logging here
     let auth_router = Router::new()
         .nest("/auth", user_auth_routes())
-        .layer(middleware::from_fn(make_request_response_inspecter(false)));
+        .layer(middleware::from_fn(make_request_response_inspector(false)));
 
     // Protected API routes
     let protected_routes = Router::new()
+        .nest("/assignments", assignment_routes())
         .nest("/user", user_routes())
         .nest("/device", device_routes())
         .nest("/file", file_routes())
@@ -87,8 +90,8 @@ pub fn create_router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(state.config.asset_max_size))
         // enforce JWT authentication
         .route_layer(middleware::from_fn(jwt::jwt_auth))
-        // attach inspecter
-        .layer(middleware::from_fn(make_request_response_inspecter(true)));
+        // attach inspector
+        .layer(middleware::from_fn(make_request_response_inspector(true)));
 
     // setup assets routes
     let public_assets_routes = Router::new().nest_service(
@@ -103,8 +106,8 @@ pub fn create_router(state: AppState) -> Router {
         )
         // enforce JWT authentication
         .route_layer(middleware::from_fn(jwt::jwt_auth))
-        // attach inspecter
-        .layer(middleware::from_fn(make_request_response_inspecter(true)));
+        // attach inspector
+        .layer(middleware::from_fn(make_request_response_inspector(true)));
 
     // Create the main router
     // and merge all the routes
@@ -114,6 +117,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/health", axum::routing::get(health_check))
         .merge(auth_router)
         .merge(protected_routes)
+        .merge(web::web_routes())
         .merge(create_swagger_ui())
         .merge(public_assets_routes)
         .merge(private_assets_routes)
@@ -162,16 +166,16 @@ type InspectorFuture = std::pin::Pin<
 /// Intercepts HTTP requests and responses: buffers bodies and query strings, then logs their content.
 /// Returns a 403 Forbidden error if any forbidden patterns are detected in the request body or query string.
 /// Note: multipart/form-data requests bypass this middleware and must be validated within their handlers.
-fn make_request_response_inspecter(
+fn make_request_response_inspector(
     log_enabled: bool,
 ) -> impl Fn(Request<Body>, Next) -> InspectorFuture + Clone + Send + Sync + 'static {
     move |req, next| {
-        let fut = request_response_inspecter(req, next, log_enabled);
+        let fut = request_response_inspector(req, next, log_enabled);
         Box::pin(fut)
     }
 }
 
-async fn request_response_inspecter(
+async fn request_response_inspector(
     req: Request<Body>,
     next: Next,
     log_enabled: bool,

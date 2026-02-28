@@ -21,7 +21,7 @@ use tokio_util::io::ReaderStream;
 /// Serve a protected file from the server's filesystem.
 pub async fn serve_protected_file(
     State(state): State<AppState>,
-    Path(file_id): Path<String>,
+    Path(file_id): Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let file_metadata = state.file_service.get_file_metadata(file_id).await?;
 
@@ -78,7 +78,7 @@ pub async fn serve_protected_file(
 /// Delete a file from the server's filesystem and database.
 pub async fn delete_file(
     State(state): State<AppState>,
-    Path(file_id): Path<String>,
+    Path(file_id): Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
     let message = state.file_service.delete_file(file_id).await?;
     Ok(RestApiResponse::success_with_message(message, ()))

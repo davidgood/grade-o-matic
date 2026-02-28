@@ -55,7 +55,7 @@ impl DeviceRepository for DeviceRepo {
         Ok(devices)
     }
 
-    async fn find_by_id(&self, pool: PgPool, id: String) -> Result<Option<Device>, sqlx::Error> {
+    async fn find_by_id(&self, pool: PgPool, id: uuid::Uuid) -> Result<Option<Device>, sqlx::Error> {
         let device = sqlx::query_as::<_, Device>(FIND_DEVICE_INFO_QUERY)
             .bind(id)
             .fetch_optional(&pool)
@@ -69,7 +69,7 @@ impl DeviceRepository for DeviceRepo {
         tx: &mut Transaction<'_, Postgres>,
         device: CreateDeviceDto,
     ) -> Result<Device, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
+        let id = Uuid::new_v4();
 
         sqlx::query!(
             r#"
@@ -100,7 +100,7 @@ impl DeviceRepository for DeviceRepo {
     async fn update(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: uuid::Uuid,
         device: UpdateDeviceDto,
     ) -> Result<Option<Device>, sqlx::Error> {
         let existing = sqlx::query!(r#"SELECT id FROM devices WHERE id = $1"#, id)
@@ -150,8 +150,8 @@ impl DeviceRepository for DeviceRepo {
     async fn update_many(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        user_id: String,
-        modified_by: String,
+        user_id: uuid::Uuid,
+        modified_by: uuid::Uuid,
         update_devices: UpdateManyDevicesDto,
     ) -> Result<(), sqlx::Error> {
         let mut builder = QueryBuilder::<_>::new(
@@ -168,7 +168,7 @@ impl DeviceRepository for DeviceRepo {
                 device
                     .id
                     .clone()
-                    .unwrap_or_else(|| Uuid::new_v4().to_string()),
+                    .unwrap_or_else(|| Uuid::new_v4()),
             )
             .push_bind(&user_id)
             .push_bind(&device.name)
@@ -201,7 +201,7 @@ impl DeviceRepository for DeviceRepo {
     async fn delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: uuid::Uuid,
     ) -> Result<bool, sqlx::Error> {
         let res = sqlx::query!(r#"DELETE FROM devices WHERE id = $1"#, id)
             .execute(&mut **tx)

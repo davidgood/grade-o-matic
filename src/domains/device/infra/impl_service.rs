@@ -32,7 +32,7 @@ impl DeviceServiceTrait for DeviceService {
     }
 
     /// get device by id
-    async fn get_device_by_id(&self, id: String) -> Result<DeviceDto, AppError> {
+    async fn get_device_by_id(&self, id: uuid::Uuid) -> Result<DeviceDto, AppError> {
         match self.repo.find_by_id(self.pool.clone(), id).await {
             Ok(Some(device)) => Ok(DeviceDto::from(device)),
             Ok(None) => Err(AppError::NotFound("Device not found".into())),
@@ -76,7 +76,7 @@ impl DeviceServiceTrait for DeviceService {
     /// update device
     async fn update_device(
         &self,
-        id: String,
+        id: uuid::Uuid,
         payload: UpdateDeviceDto,
     ) -> Result<DeviceDto, AppError> {
         let mut tx = self.pool.begin().await?;
@@ -98,7 +98,7 @@ impl DeviceServiceTrait for DeviceService {
     }
 
     /// delete device
-    async fn delete_device(&self, id: String) -> Result<String, AppError> {
+    async fn delete_device(&self, id: uuid::Uuid) -> Result<String, AppError> {
         let mut tx = self.pool.begin().await?;
         match self.repo.delete(&mut tx, id).await {
             Ok(true) => {
@@ -120,8 +120,8 @@ impl DeviceServiceTrait for DeviceService {
     /// batch update device
     async fn update_many_devices(
         &self,
-        user_id: String,
-        modified_by: String,
+        user_id: uuid::Uuid,
+        modified_by: uuid::Uuid,
         payload: UpdateManyDevicesDto,
     ) -> Result<String, AppError> {
         let mut tx = self.pool.begin().await?;

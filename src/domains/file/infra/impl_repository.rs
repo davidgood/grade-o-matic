@@ -25,7 +25,7 @@ impl FileRepository for FileRepo {
         tx: &mut Transaction<'_, Postgres>,
         file: CreateFileDto,
     ) -> Result<UploadedFile, sqlx::Error> {
-        let id = Uuid::new_v4().to_string();
+        let id = Uuid::new_v4();
 
         sqlx::query!(
             r#"
@@ -59,7 +59,7 @@ impl FileRepository for FileRepo {
     async fn find_by_user_id(
         &self,
         pool: PgPool,
-        user_id: String,
+        user_id: uuid::Uuid,
     ) -> Result<Option<UploadedFile>, sqlx::Error> {
         let uploaded_file = sqlx::query_as!(
             UploadedFile,
@@ -83,7 +83,7 @@ impl FileRepository for FileRepo {
     async fn find_by_id(
         &self,
         pool: PgPool,
-        id: String,
+        id: uuid::Uuid,
     ) -> Result<Option<UploadedFile>, sqlx::Error> {
         let uploaded_file = sqlx::query_as::<_, UploadedFile>(FIND_FILE_INFO_QUERY)
             .bind(id)
@@ -96,7 +96,7 @@ impl FileRepository for FileRepo {
     async fn delete(
         &self,
         tx: &mut Transaction<'_, Postgres>,
-        id: String,
+        id: uuid::Uuid,
     ) -> Result<bool, sqlx::Error> {
         let result = sqlx::query!(r#"DELETE FROM uploaded_files WHERE id = $1"#, id)
             .execute(&mut **tx)

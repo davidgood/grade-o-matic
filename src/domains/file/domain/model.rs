@@ -75,8 +75,8 @@ impl Type<Postgres> for FileType {
 /// Domain model representing metadata for a file uploaded by a user.
 #[derive(Debug, Clone, FromRow)]
 pub struct UploadedFile {
-    pub id: String,
-    pub user_id: String,
+    pub id: uuid::Uuid,
+    pub user_id: uuid::Uuid,
     pub file_name: String,
     pub origin_file_name: String,
     pub file_relative_path: String,
@@ -84,8 +84,8 @@ pub struct UploadedFile {
     pub content_type: String,
     pub file_size: i64,
     pub file_type: FileType,
-    pub created_by: Option<String>,
+    pub created_by: Option<uuid::Uuid>,
     pub created_at: DateTime<Utc>,
-    pub modified_by: Option<String>,
+    pub modified_by: Option<uuid::Uuid>,
     pub modified_at: DateTime<Utc>,
 }
