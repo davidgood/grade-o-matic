@@ -45,7 +45,7 @@ pub async fn get_assignments(
         content_type = "multipart/form-data",
         description = "Assignment creation"
     ),
-    responses((status = 200, description = "Create a new assignment", body = CreateAssignmentDto)),
+    responses((status = 201, description = "Create a new assignment", body = CreateAssignmentDto)),
     tag = "Assignments"
 )]
 pub async fn create_assignment(
@@ -56,8 +56,8 @@ pub async fn create_assignment(
     let mut payload = payload;
     payload.modified_by = claims.sub;
 
-    let device = service.create(payload).await?;
-    Ok(RestApiResponse::success(device))
+    let assignment = service.create(payload).await?;
+    Ok(RestApiResponse::created(assignment))
 }
 
 #[utoipa::path(

@@ -31,6 +31,14 @@ where
         }
     }
 
+    pub fn created(data: T) -> Self {
+        Self {
+            status: 201,
+            message: "success".to_string(),
+            data: Some(data),
+        }
+    }
+
     /// Create a success response with a custom message.
     pub fn success_with_message(message: impl Into<String>, data: T) -> Self {
         Self {
@@ -64,6 +72,10 @@ impl<T: Serialize> RestApiResponse<T> {
     /// Return a successful response with default message.
     pub fn success(data: T) -> Self {
         Self(ApiResponse::success(data))
+    }
+
+    pub fn created(data: T) -> Self {
+        Self(ApiResponse::created(data))
     }
 
     /// Return a successful response with a custom message.
