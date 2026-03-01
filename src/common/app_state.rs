@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::extract::FromRef;
 
 use crate::domains::{
+    assignments::AssignmentServiceTrait,
     auth::AuthServiceTrait,
     device::DeviceServiceTrait,
     file::FileServiceTrait,
@@ -21,6 +22,8 @@ pub struct AppState {
     pub auth_service: Arc<dyn AuthServiceTrait>,
     /// Service handling user-related logic.
     pub user_service: Arc<dyn UserServiceTrait>,
+    /// Service handling assignment-related logic.
+    pub assignment_service: Arc<dyn AssignmentServiceTrait>,
     /// Service handling device-related logic.
     pub device_service: Arc<dyn DeviceServiceTrait>,
     /// Service handling file-related logic.
@@ -33,6 +36,7 @@ impl AppState {
         config: Config,
         auth_service: Arc<dyn AuthServiceTrait>,
         user_service: Arc<dyn UserServiceTrait>,
+        assignment_service: Arc<dyn AssignmentServiceTrait>,
         device_service: Arc<dyn DeviceServiceTrait>,
         file_service: Arc<dyn FileServiceTrait>,
     ) -> Self {
@@ -40,6 +44,7 @@ impl AppState {
             config,
             auth_service,
             user_service,
+            assignment_service,
             device_service,
             file_service,
         }
@@ -61,6 +66,12 @@ impl FromRef<AppState> for Arc<dyn DeviceServiceTrait> {
 impl FromRef<AppState> for Arc<dyn UserServiceTrait> {
     fn from_ref(input: &AppState) -> Self {
         Arc::clone(&input.user_service)
+    }
+}
+
+impl FromRef<AppState> for Arc<dyn AssignmentServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.assignment_service)
     }
 }
 

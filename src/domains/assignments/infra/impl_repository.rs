@@ -5,10 +5,12 @@ use crate::domains::assignments::domain::{
 };
 
 use crate::domains::assignments::dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto};
-use sqlx::{Error, PgPool, Postgres, Transaction};
+use sqlx::{Error, PgPool};
 use uuid::Uuid;
 
-pub struct AssignmentRepository;
+pub struct AssignmentRepository {
+    pool: PgPool,
+}
 
 const FIND_ALL_ASSIGNMENTS_QUERY: &str = r#"
     SELECT
@@ -31,26 +33,27 @@ SELECT
 
 #[async_trait]
 impl AssignmentRepositoryTrait for AssignmentRepository {
-    async fn find_all(&self, pool: PgPool) -> Result<Vec<Assignment>, Error> {
+    fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+
+    async fn find_all(&self) -> Result<Vec<Assignment>, Error> {
         let assignments = sqlx::query_as::<_, Assignment>(FIND_ALL_ASSIGNMENTS_QUERY)
-            .fetch_all(&pool)
+            .fetch_all(&self.pool)
             .await?;
         Ok(assignments)
     }
 
-    async fn find_by_id(&self, id: Uuid, pool: PgPool) -> Result<Option<Assignment>, Error> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Assignment>, Error> {
         let assignment = sqlx::query_as::<_, Assignment>(FIND_ASSIGNMENT_BY_ID_QUERY)
             .bind(id)
-            .fetch_optional(&pool)
+            .fetch_optional(&self.pool)
             .await?;
         Ok(assignment)
     }
 
-    async fn create(
-        &self,
-        tx: &mut Transaction<'_, Postgres>,
-        assignment: CreateAssignmentDto,
-    ) -> Result<Uuid, Error> {
+    async fn create(&self, assignment: CreateAssignmentDto) -> Result<Uuid, Error> {
+        let mut tx = self.pool.begin().await?;
         let id = Uuid::new_v4();
 
         sqlx::query(
@@ -63,23 +66,25 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
             .bind(assignment.class_id)
             .bind(assignment.title.clone())
             .bind(assignment.description.clone())
+            .bind(assignment.due_at)
             .bind(assignment.modified_by)
             .bind(assignment.modified_by)
-            .execute(&mut **tx)
+            .execute(&mut *tx)
             .await?;
 
+        tx.commit().await?;
         Ok(id)
     }
 
     async fn update(
         &self,
-        tx: &mut Transaction<'_, Postgres>,
         id: Uuid,
         assignment: UpdateAssignmentDto,
     ) -> Result<Option<Assignment>, Error> {
+        let mut tx = self.pool.begin().await?;
         let existing = sqlx::query_as::<_, Assignment>(FIND_ASSIGNMENT_BY_ID_QUERY)
             .bind(id)
-            .fetch_optional(&mut **tx)
+            .fetch_optional(&mut *tx)
             .await?;
 
         if existing.is_some() {
@@ -101,24 +106,28 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
             .bind(assignment.due_at)
             .bind(assignment.modified_by)
             .bind(id)
-            .execute(&mut **tx)
+            .execute(&mut *tx)
             .await?;
 
             let updated_assignment = sqlx::query_as::<_, Assignment>(FIND_ASSIGNMENT_BY_ID_QUERY)
                 .bind(id)
-                .fetch_one(&mut **tx)
+                .fetch_one(&mut *tx)
                 .await?;
 
+            tx.commit().await?;
             return Ok(Some(updated_assignment));
         }
+        tx.rollback().await?;
         Ok(None)
     }
 
-    async fn delete(&self, tx: &mut Transaction<'_, Postgres>, id: Uuid) -> Result<bool, Error> {
+    async fn delete(&self, id: Uuid) -> Result<bool, Error> {
+        let mut tx = self.pool.begin().await?;
         let res = sqlx::query(r#"DELETE FROM assignments WHERE id = $1"#)
             .bind(id)
-            .execute(&mut **tx)
+            .execute(&mut *tx)
             .await?;
+        tx.commit().await?;
         Ok(res.rows_affected() > 0)
     }
 }

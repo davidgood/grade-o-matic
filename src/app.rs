@@ -29,7 +29,7 @@ use crate::{
         jwt,
     },
     domains::{
-        assignments::assignment_routes,
+        assignments::{AssignmentsApiDoc, assignment_routes},
         auth::{UserAuthApiDoc, user_auth_routes},
         device::{DeviceApiDoc, device_routes},
         file::{FileApiDoc, file_routes},
@@ -59,6 +59,10 @@ fn create_swagger_ui() -> SwaggerUi {
         .url("/api-docs/user/openapi.json", UserApiDoc::openapi())
         .url("/api-docs/device/openapi.json", DeviceApiDoc::openapi())
         .url("/api-docs/file/openapi.json", FileApiDoc::openapi())
+        .url(
+            "/api-docs/assignments/openapi.json",
+            AssignmentsApiDoc::openapi(),
+        )
 }
 
 pub fn create_router(state: AppState) -> Router {
@@ -81,7 +85,7 @@ pub fn create_router(state: AppState) -> Router {
 
     // Protected API routes
     let protected_routes = Router::new()
-        .nest("/assignments", assignment_routes())
+        .nest("/assignments", assignment_routes::<AppState>())
         .nest("/user", user_routes::<AppState>())
         .nest("/device", device_routes::<AppState>())
         .nest("/file", file_routes())
