@@ -1,4 +1,8 @@
-use axum::response::{IntoResponse, Response};
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 use serde::{Deserialize, Serialize};
 
 /// A standardized API response format.
@@ -91,6 +95,7 @@ impl<T: Serialize> RestApiResponse<T> {
 
 impl<T: Serialize> IntoResponse for RestApiResponse<T> {
     fn into_response(self) -> Response {
-        axum::Json(self.0).into_response()
+        let status = StatusCode::from_u16(self.0.status).unwrap_or(StatusCode::OK);
+        (status, Json(self.0)).into_response()
     }
 }
