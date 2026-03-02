@@ -43,6 +43,8 @@ impl FakeClassService {
             id: seed_id,
             title: "Seed Class".to_string(),
             description: Some("This is a seed class for testing".to_string()),
+            term: Some("Fall 2026".to_string()),
+            owner_id: Some(TEST_USER_ID),
             created_at: Some(Utc::now()),
         };
 
@@ -82,6 +84,8 @@ impl ClassServiceTrait for FakeClassService {
             id: Uuid::new_v4(),
             title: class.title,
             description: class.description,
+            term: class.term,
+            owner_id: class.owner_id.or(Some(class.modified_by)),
             created_at: Some(Utc::now()),
         };
 
@@ -100,6 +104,8 @@ impl ClassServiceTrait for FakeClassService {
 
         class.title = payload.title.clone();
         class.description = payload.description.clone();
+        class.term = payload.term.clone();
+        class.owner_id = payload.owner_id;
 
         Ok(Some(class.clone()))
     }
@@ -162,10 +168,12 @@ async fn create_class(app: &Router) -> (CreateClassDto, ClassDto) {
     let payload = CreateClassDto {
         title: "Test Class".to_string(),
         description: Some("This is a test class".to_string()),
+        term: Some("Fall 2026".to_string()),
+        owner_id: Some(TEST_USER_ID),
         modified_by: TEST_USER_ID,
     };
 
-    let response = request_with_auth_and_body(&app, Method::POST, "/classes", &payload).await;
+    let response = request_with_auth_and_body(app, Method::POST, "/classes", &payload).await;
 
     assert_eq!(response.status(), StatusCode::CREATED);
     let response_body: RestApiResponse<ClassDto> =
@@ -224,6 +232,8 @@ async fn test_update_class() {
         id: class.id,
         title: "Updated Title".to_string(),
         description: Some("Updated Description".to_string()),
+        term: Some("Spring 2027".to_string()),
+        owner_id: Some(TEST_USER_ID),
         modified_by: TEST_USER_ID,
     };
 
@@ -236,6 +246,8 @@ async fn test_update_class() {
 
     assert_eq!(payload.title, class_dto.title);
     assert_eq!(payload.description, class_dto.description);
+    assert_eq!(payload.term, class_dto.term);
+    assert_eq!(payload.owner_id, class_dto.owner_id);
 }
 
 #[tokio::test]

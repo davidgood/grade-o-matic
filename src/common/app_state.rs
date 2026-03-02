@@ -7,6 +7,7 @@ use crate::domains::classes::ClassServiceTrait;
 use crate::domains::{
     assignments::AssignmentServiceTrait,
     auth::AuthServiceTrait,
+    class_memberships::ClassMembershipServiceTrait,
     device::DeviceServiceTrait,
     file::FileServiceTrait,
     user::{UserAssetPattern, UserServiceTrait},
@@ -30,27 +31,34 @@ pub struct AppState {
     pub file_service: Arc<dyn FileServiceTrait>,
     /// Service handling class-related logic.
     pub class_service: Arc<dyn ClassServiceTrait>,
+    /// Service handling class membership-related logic.
+    pub class_membership_service: Arc<dyn ClassMembershipServiceTrait>,
+}
+
+/// Groups all service dependencies for building [`AppState`].
+#[derive(Clone)]
+pub struct AppServices {
+    pub auth_service: Arc<dyn AuthServiceTrait>,
+    pub user_service: Arc<dyn UserServiceTrait>,
+    pub assignment_service: Arc<dyn AssignmentServiceTrait>,
+    pub device_service: Arc<dyn DeviceServiceTrait>,
+    pub file_service: Arc<dyn FileServiceTrait>,
+    pub class_service: Arc<dyn ClassServiceTrait>,
+    pub class_membership_service: Arc<dyn ClassMembershipServiceTrait>,
 }
 
 impl AppState {
     /// Creates a new instance of AppState with the provided dependencies.
-    pub fn new(
-        config: Config,
-        auth_service: Arc<dyn AuthServiceTrait>,
-        user_service: Arc<dyn UserServiceTrait>,
-        assignment_service: Arc<dyn AssignmentServiceTrait>,
-        device_service: Arc<dyn DeviceServiceTrait>,
-        file_service: Arc<dyn FileServiceTrait>,
-        class_service: Arc<dyn ClassServiceTrait>,
-    ) -> Self {
+    pub fn new(config: Config, services: AppServices) -> Self {
         Self {
             config,
-            auth_service,
-            user_service,
-            assignment_service,
-            device_service,
-            file_service,
-            class_service,
+            auth_service: services.auth_service,
+            user_service: services.user_service,
+            assignment_service: services.assignment_service,
+            device_service: services.device_service,
+            file_service: services.file_service,
+            class_service: services.class_service,
+            class_membership_service: services.class_membership_service,
         }
     }
 }
@@ -88,5 +96,11 @@ impl FromRef<AppState> for UserAssetPattern {
 impl FromRef<AppState> for Arc<dyn ClassServiceTrait> {
     fn from_ref(input: &AppState) -> Self {
         Arc::clone(&input.class_service)
+    }
+}
+
+impl FromRef<AppState> for Arc<dyn ClassMembershipServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.class_membership_service)
     }
 }

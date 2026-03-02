@@ -102,7 +102,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
 
         assignment.title = payload.title.clone();
         assignment.description = payload.description.clone();
-        assignment.due_at = payload.due_at.clone();
+        assignment.due_at = payload.due_at;
 
         Ok(assignment.clone())
     }
@@ -172,7 +172,7 @@ async fn create_assignment(app: &Router) -> (CreateAssignmentDto, AssignmentDto)
         modified_by: TEST_USER_ID,
     };
 
-    let response = request_with_auth_and_body(&app, Method::POST, "/assignments", &payload).await;
+    let response = request_with_auth_and_body(app, Method::POST, "/assignments", &payload).await;
 
     assert_eq!(response.status(), StatusCode::CREATED);
 

@@ -5,10 +5,16 @@ use sqlx::PgPool;
 use crate::common::config::Config;
 use crate::domains::assignments::{AssignmentServiceTrait, create_assignment_service};
 use crate::domains::auth::{AuthService, AuthServiceTrait};
+use crate::domains::class_memberships::{
+    ClassMembershipServiceTrait, create_class_membership_service,
+};
 use crate::domains::device::{DeviceService, DeviceServiceTrait};
 use crate::domains::file::{FileService, FileServiceTrait};
 use crate::domains::user::UserServiceTrait;
-use crate::{common::app_state::AppState, domains::user::UserService};
+use crate::{
+    common::app_state::{AppServices, AppState},
+    domains::user::UserService,
+};
 
 use crate::domains::classes::{ClassServiceTrait, create_class_service};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -24,15 +30,20 @@ pub fn build_app_state(pool: PgPool, config: Config) -> AppState {
         create_assignment_service(pool.clone());
     let device_service: Arc<dyn DeviceServiceTrait> = DeviceService::create_service(pool.clone());
     let class_service: Arc<dyn ClassServiceTrait> = create_class_service(pool.clone());
+    let class_membership_service: Arc<dyn ClassMembershipServiceTrait> =
+        create_class_membership_service(pool.clone());
 
     AppState::new(
         config,
-        auth_service,
-        user_service,
-        assignment_service,
-        device_service,
-        file_service,
-        class_service,
+        AppServices {
+            auth_service,
+            user_service,
+            assignment_service,
+            device_service,
+            file_service,
+            class_service,
+            class_membership_service,
+        },
     )
 }
 

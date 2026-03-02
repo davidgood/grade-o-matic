@@ -151,9 +151,7 @@ pub async fn create_test_router() -> Router {
     ensure_test_assets(&config).expect("Failed to ensure test assets");
     let pool = setup_test_db().await.unwrap();
     let state = build_app_state(pool, config.clone());
-    let app = create_router(state);
-
-    app
+    create_router(state)
 }
 
 fn ensure_test_assets(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
