@@ -1,4 +1,4 @@
 <tr>
   <td>{{ assignment.title }}</td>
-  <td>{{ assignment.due_at | default(value="-") }}</td>
+  <td>{{ assignment.due_at or "-" }}</td>
 </tr>

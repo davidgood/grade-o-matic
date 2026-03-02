@@ -1,5 +1,39 @@
 {% extends "layouts/base.html" %}
 {% block content %}
-<h1>Assignments</h1>
-<div id="assignments-table" hx-get="/ui/fragments/assignments/table" hx-trigger="load"></div>
+<header class="space-y-2">
+  <h1 class="text-3xl font-bold tracking-tight">Assignments</h1>
+  <p class="text-slate-600">HTMX-powered partial rendering with Alpine filter state.</p>
+  <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100" href="/">Back to Home</a>
+</header>
+
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" x-data="{ showFilters: false }">
+  <div class="flex flex-wrap gap-2">
+    <button class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700" @click="showFilters = !showFilters">
+      Toggle Filters
+    </button>
+    <button
+      class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
+      hx-get="/ui/fragments/assignments/table"
+      hx-target="#assignments-table"
+      hx-swap="innerHTML"
+    >
+      Refresh Table
+    </button>
+  </div>
+
+  <div x-show="showFilters" x-transition class="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
+    <strong class="text-sm">Filters</strong>
+    <p class="mt-1 text-sm text-slate-600">Filter controls will go here.</p>
+  </div>
+</section>
+
+<section
+  id="assignments-table"
+  class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+  hx-get="/ui/fragments/assignments/table"
+  hx-trigger="load"
+  hx-swap="innerHTML"
+>
+  Loading assignments...
+</section>
 {% endblock %}

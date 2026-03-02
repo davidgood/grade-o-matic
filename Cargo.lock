@@ -832,6 +832,7 @@ dependencies = [
  "env_filter",
  "http-body-util",
  "jsonwebtoken",
+ "minijinja",
  "once_cell",
  "opentelemetry",
  "opentelemetry-appender-tracing",
@@ -1384,6 +1385,15 @@ checksum = "f7c44f8e672c00fe5308fa235f821cb4198414e1c77935c1ab6948d3fd78550e"
 dependencies = [
  "mime",
  "unicase",
+]
+
+[[package]]
+name = "minijinja"
+version = "2.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c54f3bcc034dd74496b5ca929fd0b710186672d5ff0b0f255a9ceb259042ece"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
