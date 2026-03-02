@@ -47,7 +47,8 @@ where
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ClassDto>, AppError> {
         match self.repository.find_by_id(id).await {
-            Ok(class) => Ok(class.map(Into::into)),
+            Ok(Some(class)) => Ok(Some(class.into())),
+            Ok(None) => Err(AppError::NotFound("Class not found".into())),
             Err(err) => {
                 tracing::error!("Error fetching class: {err}");
                 Err(AppError::DatabaseError(err))

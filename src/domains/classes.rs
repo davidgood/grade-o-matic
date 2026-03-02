@@ -9,7 +9,7 @@ mod domain {
     pub mod service;
 }
 
-mod dto {
+pub mod dto {
     pub mod class_dto;
 }
 
