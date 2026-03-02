@@ -1,7 +1,8 @@
 use axum::{
     extract::Request,
+    http::header,
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 
 use chrono::{Duration, Utc};
@@ -120,25 +121,14 @@ pub async fn jwt_auth<B>(mut req: Request<B>, next: Next) -> Result<Response, Re
 where
     B: Send + Into<axum::body::Body>,
 {
-    // Try to extract and trim the token in one go.
-    let token = req
-        .headers()
-        .get("Authorization")
-        .and_then(|v| v.to_str().ok())
-        .and_then(|header| header.strip_prefix("Bearer "))
-        .map(|t| t.trim())
-        .filter(|t| !t.is_empty())
+    let token = extract_token_from_headers(req.headers())
         .ok_or_else(|| AppError::InvalidToken.into_response())?;
 
     // Validate and decode the token.
-    let token_data =
-        decode::<Claims>(token, &KEYS.decoding, &Validation::default()).map_err(|err| {
-            tracing::error!("Error decoding token: {:?}", err);
-            AppError::InvalidToken.into_response()
-        })?;
+    let claims = decode_token(token).map_err(|_| AppError::InvalidToken.into_response())?;
 
     // Insert the decoded claims into the request extensions.
-    req.extensions_mut().insert(token_data.claims);
+    req.extensions_mut().insert(claims);
     Ok(next.run(req.map(Into::into)).await)
 }
 
@@ -165,4 +155,47 @@ pub fn can_access_ui(role: &UserRole) -> bool {
         role,
         UserRole::Admin | UserRole::Instructor | UserRole::Ta | UserRole::Student
     )
+}
+
+/// Middleware to validate JWT for browser UI routes.
+/// Reads bearer token from Authorization header or `auth_token` cookie.
+/// Redirects to `/ui/login` when token is missing/invalid.
+pub async fn jwt_auth_web<B>(mut req: Request<B>, next: Next) -> Result<Response, Response>
+where
+    B: Send + Into<axum::body::Body>,
+{
+    let token = extract_token_from_headers(req.headers())
+        .ok_or_else(|| Redirect::to("/ui/login").into_response())?;
+
+    let claims = decode_token(token).map_err(|_| Redirect::to("/ui/login").into_response())?;
+
+    req.extensions_mut().insert(claims);
+    Ok(next.run(req.map(Into::into)).await)
+}
+
+fn decode_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
+    decode::<Claims>(token, &KEYS.decoding, &Validation::default()).map(|data| data.claims)
+}
+
+fn extract_token_from_headers(headers: &header::HeaderMap) -> Option<&str> {
+    extract_bearer_token(headers).or_else(|| extract_auth_cookie_token(headers))
+}
+
+fn extract_bearer_token(headers: &header::HeaderMap) -> Option<&str> {
+    headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|value| value.strip_prefix("Bearer "))
+        .map(str::trim)
+        .filter(|t| !t.is_empty())
+}
+
+fn extract_auth_cookie_token(headers: &header::HeaderMap) -> Option<&str> {
+    let cookie_header = headers.get(header::COOKIE)?.to_str().ok()?;
+
+    cookie_header
+        .split(';')
+        .map(str::trim)
+        .find_map(|kv| kv.strip_prefix("auth_token="))
+        .filter(|t| !t.is_empty())
 }
