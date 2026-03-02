@@ -237,7 +237,7 @@ async fn test_update_class() {
         modified_by: TEST_USER_ID,
     };
 
-    let response = request_with_auth_and_body(app, Method::PUT, "/classes", &payload).await;
+    let response = request_with_auth_and_body(&app, Method::PUT, "/classes", &payload).await;
     assert_eq!(response.status(), StatusCode::OK);
 
     let response_body: RestApiResponse<ClassDto> =

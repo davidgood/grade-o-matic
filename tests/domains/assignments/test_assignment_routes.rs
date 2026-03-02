@@ -245,7 +245,7 @@ async fn test_update_assignment() {
     };
 
     let url = format!("/assignments/{}", assignment.id);
-    let response = request_with_auth_and_body(app, Method::PUT, &url, &payload).await;
+    let response = request_with_auth_and_body(&app, Method::PUT, &url, &payload).await;
     assert_eq!(response.status(), StatusCode::OK);
 
     let response_body: RestApiResponse<AssignmentDto> =
