@@ -6,14 +6,13 @@ use axum::{
     routing::get,
 };
 use grade_o_matic::common::{config::Config, jwt};
+use grade_o_matic::domains::user::UserRole;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 
 use std::{env, fs, path::Path};
 
-mod test_helpers;
-
-use test_helpers::TEST_USER_ID;
+use crate::test_helpers::TEST_USER_ID;
 
 fn load_assets_test_config() -> Config {
     if env::var("JWT_SECRET_KEY").is_err() {
@@ -88,7 +87,7 @@ async fn request(router: &Router, method: Method, uri: &str) -> axum::response::
 }
 
 async fn request_with_auth(router: &Router, method: Method, uri: &str) -> axum::response::Response {
-    let token = jwt::make_jwt_token(&TEST_USER_ID).unwrap();
+    let token = jwt::make_jwt_token(&TEST_USER_ID, UserRole::Student).unwrap();
     let req = Request::builder()
         .method(method)
         .uri(uri)

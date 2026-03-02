@@ -80,7 +80,8 @@ impl AuthServiceTrait for AuthService {
             return Err(AppError::WrongCredentials);
         }
 
-        let token = make_jwt_token(&user_auth.user_id).map_err(|_| AppError::InternalError)?;
+        let token = make_jwt_token(&user_auth.user_id, user_auth.user_role.clone())
+            .map_err(|_| AppError::InternalError)?;
 
         Ok(AuthBody::new(token))
     }

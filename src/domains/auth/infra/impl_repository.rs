@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sqlx::{PgPool, Postgres, Transaction};
 
-use crate::domains::auth::domain::model::UserAuth;
+use crate::domains::auth::domain::model::{AuthIdentity, UserAuth};
 use crate::domains::auth::domain::repository::UserAuthRepository;
 pub struct UserAuthRepo;
 
@@ -11,17 +11,16 @@ impl UserAuthRepository for UserAuthRepo {
         &self,
         pool: PgPool,
         user_name: String,
-    ) -> Result<Option<UserAuth>, sqlx::Error> {
-        let result = sqlx::query_as!(
-            UserAuth,
+    ) -> Result<Option<AuthIdentity>, sqlx::Error> {
+        let result = sqlx::query_as::<_, AuthIdentity>(
             r#"
-            SELECT ua.user_id, ua.password_hash
+            SELECT ua.user_id, ua.password_hash, u.user_role
               FROM user_auth ua
               JOIN users u ON ua.user_id = u.id
               WHERE u.username = $1
             "#,
-            user_name
         )
+        .bind(user_name)
         .fetch_optional(&pool)
         .await?;
 

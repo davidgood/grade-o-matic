@@ -12,6 +12,7 @@ use std::{env, fmt::Display};
 use utoipa::ToSchema;
 
 use super::error::AppError;
+use crate::domains::user::UserRole;
 
 /// JWT_SECRET_KEY is the environment variable that holds the secret key for JWT encoding and decoding.
 /// It is loaded from the environment variables using the dotenv crate.
@@ -46,6 +47,7 @@ impl Keys {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: uuid::Uuid,
+    pub user_role: UserRole,
     pub exp: usize,
     pub iat: usize,
 }
@@ -54,7 +56,7 @@ pub struct Claims {
 /// It formats the claims as a string, showing the user ID.
 impl Display for Claims {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "user_id: {}", self.sub)
+        write!(f, "user_id: {}, role: {:?}", self.sub, self.user_role)
     }
 }
 
@@ -68,6 +70,7 @@ impl Default for Claims {
         let iat: usize = now.timestamp() as usize;
         Claims {
             sub: uuid::Uuid::new_v4(),
+            user_role: UserRole::Student,
             exp,
             iat,
         }
@@ -102,9 +105,10 @@ pub struct AuthPayload {
 
 /// make_jwt_token is a function that creates a JWT token.
 /// It takes a user ID as a parameter and returns a Result with the JWT token or an error.
-pub fn make_jwt_token(user_id: &uuid::Uuid) -> Result<String, AppError> {
+pub fn make_jwt_token(user_id: &uuid::Uuid, user_role: UserRole) -> Result<String, AppError> {
     let claims = Claims {
         sub: *user_id,
+        user_role,
         ..Default::default()
     };
     encode(&Header::default(), &claims, &KEYS.encoding).map_err(|_| AppError::TokenCreation)
@@ -136,4 +140,29 @@ where
     // Insert the decoded claims into the request extensions.
     req.extensions_mut().insert(token_data.claims);
     Ok(next.run(req.map(Into::into)).await)
+}
+
+/// Middleware to enforce web UI access by role.
+pub async fn require_ui_access<B>(req: Request<B>, next: Next) -> Result<Response, Response>
+where
+    B: Send + Into<axum::body::Body>,
+{
+    let claims = req
+        .extensions()
+        .get::<Claims>()
+        .ok_or_else(|| AppError::InvalidToken.into_response())?;
+
+    if !can_access_ui(&claims.user_role) {
+        return Err(AppError::Forbidden.into_response());
+    }
+
+    Ok(next.run(req.map(Into::into)).await)
+}
+
+/// Role policy for web UI routes.
+pub fn can_access_ui(role: &UserRole) -> bool {
+    matches!(
+        role,
+        UserRole::Admin | UserRole::Instructor | UserRole::Ta | UserRole::Student
+    )
 }
