@@ -19,7 +19,8 @@ const FIND_USER_QUERY: &str = r#"
         u.modified_by,
         u.modified_at,
         uf.id as file_id,
-        uf.origin_file_name
+        uf.origin_file_name,
+        u.user_role
     FROM users u
     LEFT JOIN uploaded_files uf
             ON uf.user_id = u.id and uf.file_type = 'profile_picture'
@@ -36,7 +37,8 @@ const FIND_USER_INFO_QUERY: &str = r#"
         u.modified_by,
         u.modified_at,
         uf.id as file_id,
-        uf.origin_file_name
+        uf.origin_file_name,
+        u.user_role
     FROM users u
     LEFT JOIN uploaded_files uf
            ON uf.user_id = u.id and uf.file_type = 'profile_picture'

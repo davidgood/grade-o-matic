@@ -58,17 +58,19 @@ struct FakeUserService {
 impl FakeUserService {
     fn new() -> Self {
         let seed_id = Uuid::new_v4();
-        let seed = UserDto {
-            id: seed_id,
-            username: "user0".to_string(),
-            email: Some("user0@test.com".to_string()),
-            created_by: Some(TEST_USER_ID),
-            created_at: Some(Utc::now()),
-            modified_by: Some(TEST_USER_ID),
-            modified_at: Some(Utc::now()),
-            file_id: None,
-            origin_file_name: None,
-        };
+        let seed: UserDto = serde_json::from_value(serde_json::json!({
+            "id": seed_id,
+            "username": "user0",
+            "email": "user0@test.com",
+            "created_by": TEST_USER_ID,
+            "created_at": Utc::now(),
+            "modified_by": TEST_USER_ID,
+            "modified_at": Utc::now(),
+            "file_id": null,
+            "origin_file_name": null,
+            "user_role": "student"
+        }))
+        .expect("failed to build seed user dto");
 
         let mut users = HashMap::new();
         users.insert(seed_id, seed);
@@ -133,17 +135,19 @@ impl UserServiceTrait for FakeUserService {
         let now = Utc::now();
         let id = Uuid::new_v4();
 
-        let mut user = UserDto {
-            id,
-            username: create_user.username,
-            email: Some(create_user.email),
-            created_by: Some(create_user.modified_by),
-            created_at: Some(now),
-            modified_by: Some(create_user.modified_by),
-            modified_at: Some(now),
-            file_id: None,
-            origin_file_name: None,
-        };
+        let mut user: UserDto = serde_json::from_value(serde_json::json!({
+            "id": id,
+            "username": create_user.username,
+            "email": create_user.email,
+            "created_by": create_user.modified_by,
+            "created_at": now,
+            "modified_by": create_user.modified_by,
+            "modified_at": now,
+            "file_id": null,
+            "origin_file_name": null,
+            "user_role": "student"
+        }))
+        .expect("failed to build created user dto");
 
         if let Some(file) = upload_file_dto {
             user.file_id = Some(Uuid::new_v4().to_string());

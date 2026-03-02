@@ -31,6 +31,7 @@ use crate::{
     domains::{
         assignments::{AssignmentsApiDoc, assignment_routes},
         auth::{UserAuthApiDoc, user_auth_routes},
+        class_memberships::{ClassMembershipsApiDoc, class_membership_routes},
         classes::{ClassesApiDoc, class_routes},
         device::{DeviceApiDoc, device_routes},
         file::{FileApiDoc, file_routes},
@@ -65,6 +66,10 @@ fn create_swagger_ui() -> SwaggerUi {
             AssignmentsApiDoc::openapi(),
         )
         .url("/api-docs/classes/openapi.json", ClassesApiDoc::openapi())
+        .url(
+            "/api-docs/class-memberships/openapi.json",
+            ClassMembershipsApiDoc::openapi(),
+        )
 }
 
 pub fn create_router(state: AppState) -> Router {
@@ -89,6 +94,7 @@ pub fn create_router(state: AppState) -> Router {
     let protected_routes = Router::new()
         .nest("/assignments", assignment_routes::<AppState>())
         .nest("/classes", class_routes::<AppState>())
+        .nest("/class-memberships", class_membership_routes::<AppState>())
         .nest("/user", user_routes::<AppState>())
         .nest("/device", device_routes::<AppState>())
         .nest("/file", file_routes())

@@ -12,6 +12,8 @@ pub struct ClassDto {
     pub id: uuid::Uuid,
     pub title: String,
     pub description: Option<String>,
+    pub term: Option<String>,
+    pub owner_id: Option<uuid::Uuid>,
     #[serde(with = "crate::common::ts_format::option")]
     pub created_at: Option<DateTime<Utc>>,
 }
@@ -21,6 +23,8 @@ pub struct CreateClassDto {
     #[validate(length(max = 255, message = "Title cannot exceed 255 characters"))]
     pub title: String,
     pub description: Option<String>,
+    pub term: Option<String>,
+    pub owner_id: Option<uuid::Uuid>,
     pub modified_by: uuid::Uuid,
 }
 
@@ -30,5 +34,7 @@ pub struct UpdateClassDto {
     #[validate(length(max = 255, message = "Title cannot exceed 255 characters"))]
     pub title: String,
     pub description: Option<String>,
+    pub term: Option<String>,
+    pub owner_id: Option<uuid::Uuid>,
     pub modified_by: uuid::Uuid,
 }

@@ -14,7 +14,13 @@ const FIND_CLASS_BY_ID_QUERY: &str = r#"
 SELECT
     c.id,
     c.title,
-    c.description
+    c.description,
+    c.term,
+    c.owner_id,
+    c.created_by,
+    c.created_at,
+    c.modified_by,
+    c.modified_at
     FROM classes c
     WHERE c.id = $1"#;
 
@@ -44,16 +50,26 @@ impl ClassRepositoryTrait for ClassRepository {
         let id = Uuid::new_v4();
         sqlx::query(
             r#"
-                INSERT INTO classes (id, title, description, created_at, created_by, modified_by)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO classes (
+                    id,
+                    title,
+                    description,
+                    term,
+                    owner_id,
+                    created_at,
+                    created_by,
+                    modified_by
+                )
+                VALUES ($1, $2, $3, $4, COALESCE($5, $6), $7, $6, $6)
                 "#,
         )
         .bind(id)
         .bind(class.title)
         .bind(class.description)
+        .bind(class.term)
+        .bind(class.owner_id)
+        .bind(class.modified_by)
         .bind(Utc::now())
-        .bind(class.modified_by)
-        .bind(class.modified_by)
         .execute(&mut *tx)
         .await?;
         tx.commit().await?;
@@ -73,13 +89,17 @@ impl ClassRepositoryTrait for ClassRepository {
                 UPDATE classes
                 SET title = $1,
                     description = $2,
-                    modified_by = $3,
+                    term = $3,
+                    owner_id = COALESCE($4, owner_id),
+                    modified_by = $5,
                     modified_at = NOW()
-                WHERE id = $4
+                WHERE id = $6
                 "#,
             )
             .bind(class.title)
             .bind(class.description)
+            .bind(class.term)
+            .bind(class.owner_id)
             .bind(class.modified_by)
             .bind(id)
             .execute(&mut *tx)

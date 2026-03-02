@@ -4,7 +4,7 @@ use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
 use validator::Validate;
 
-use crate::domains::user::domain::model::User;
+use crate::domains::user::domain::model::{User, UserRole};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
 #[dto(from = User)]
@@ -20,6 +20,7 @@ pub struct UserDto {
     pub modified_at: Option<DateTime<Utc>>,
     pub file_id: Option<String>,
     pub origin_file_name: Option<String>,
+    pub user_role: UserRole,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
