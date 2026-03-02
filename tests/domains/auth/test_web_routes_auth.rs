@@ -11,8 +11,10 @@ use axum::{
 use grade_o_matic::{
     common::error::AppError,
     common::jwt::{self, AuthBody, AuthPayload},
+    domains::assignments::{AssignmentServiceTrait, dto::assignment_dto::AssignmentDto},
     domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
+    domains::classes::{ClassServiceTrait, dto::class_dto::ClassDto},
     domains::file::{FileServiceTrait, dto::file_dto::UploadFileDto},
     domains::user::{
         UserRole, UserServiceTrait,
@@ -28,6 +30,8 @@ use uuid::Uuid;
 #[derive(Clone)]
 struct TestState {
     auth_service: Arc<dyn AuthServiceTrait>,
+    assignment_service: Arc<dyn AssignmentServiceTrait>,
+    class_service: Arc<dyn ClassServiceTrait>,
     user_service: Arc<dyn UserServiceTrait>,
 }
 
@@ -43,7 +47,21 @@ impl FromRef<TestState> for Arc<dyn UserServiceTrait> {
     }
 }
 
+impl FromRef<TestState> for Arc<dyn AssignmentServiceTrait> {
+    fn from_ref(input: &TestState) -> Self {
+        Arc::clone(&input.assignment_service)
+    }
+}
+
+impl FromRef<TestState> for Arc<dyn ClassServiceTrait> {
+    fn from_ref(input: &TestState) -> Self {
+        Arc::clone(&input.class_service)
+    }
+}
+
 struct FakeAuthService;
+struct FakeAssignmentService;
+struct FakeClassService;
 struct FakeUserService;
 
 #[async_trait]
@@ -108,6 +126,82 @@ impl UserServiceTrait for FakeUserService {
     }
 }
 
+#[async_trait]
+impl AssignmentServiceTrait for FakeAssignmentService {
+    fn create_service(_pool: sqlx::PgPool) -> Arc<dyn AssignmentServiceTrait>
+    where
+        Self: Sized,
+    {
+        Arc::new(Self)
+    }
+
+    async fn list(&self) -> Result<Vec<AssignmentDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn get_by_id(&self, _id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+        Ok(None)
+    }
+
+    async fn create(
+        &self,
+        _assignment: grade_o_matic::domains::assignments::dto::assignment_dto::CreateAssignmentDto,
+    ) -> Result<AssignmentDto, AppError> {
+        Err(AppError::InternalError)
+    }
+
+    async fn update(
+        &self,
+        _assignment: grade_o_matic::domains::assignments::dto::assignment_dto::UpdateAssignmentDto,
+    ) -> Result<AssignmentDto, AppError> {
+        Err(AppError::InternalError)
+    }
+
+    async fn delete(&self, _id: Uuid) -> Result<String, AppError> {
+        Ok("ok".to_string())
+    }
+}
+
+#[async_trait]
+impl ClassServiceTrait for FakeClassService {
+    fn create_class_service(_pool: sqlx::PgPool) -> Arc<dyn ClassServiceTrait>
+    where
+        Self: Sized,
+    {
+        Arc::new(Self)
+    }
+
+    async fn list(&self) -> Result<Vec<ClassDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassDto>, AppError> {
+        Ok(None)
+    }
+
+    async fn create(
+        &self,
+        _class: grade_o_matic::domains::classes::dto::class_dto::CreateClassDto,
+    ) -> Result<ClassDto, AppError> {
+        Err(AppError::InternalError)
+    }
+
+    async fn update(
+        &self,
+        _class: grade_o_matic::domains::classes::dto::class_dto::UpdateClassDto,
+    ) -> Result<Option<ClassDto>, AppError> {
+        Ok(None)
+    }
+
+    async fn delete(&self, _id: Uuid) -> Result<String, AppError> {
+        Ok("ok".to_string())
+    }
+}
+
 fn ensure_jwt_env() {
     if env::var("JWT_SECRET_KEY").is_err() {
         unsafe {
@@ -119,6 +213,8 @@ fn ensure_jwt_env() {
 fn create_test_router() -> Router {
     let state = TestState {
         auth_service: Arc::new(FakeAuthService),
+        assignment_service: Arc::new(FakeAssignmentService),
+        class_service: Arc::new(FakeClassService),
         user_service: Arc::new(FakeUserService),
     };
 

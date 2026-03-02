@@ -6,6 +6,7 @@ use crate::common::error::AppError;
 pub mod assignments;
 pub mod handlers;
 pub mod htmx;
+mod instructors;
 pub mod routes;
 pub mod view_models;
 
@@ -58,6 +59,16 @@ static WEB_TEMPLATES: Lazy<Environment<'static>> = Lazy::new(|| {
         include_str!("../../templates/partials/empty_state.html"),
     )
     .expect("Failed to register partials/empty_state.html");
+    env.add_template(
+        "instructors/index.html",
+        include_str!("../../templates/instructors/index.html"),
+    )
+    .expect("Failed to register instructors/index.html");
+    env.add_template(
+        "instructors/class_detail.html",
+        include_str!("../../templates/instructors/class_detail.html"),
+    )
+    .expect("Failed to register instructors/class_detail.html");
 
     env
 });

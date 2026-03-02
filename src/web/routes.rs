@@ -7,7 +7,9 @@ use axum::{
 use std::sync::Arc;
 
 use crate::common::jwt;
+use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::auth::AuthServiceTrait;
+use crate::domains::classes::ClassServiceTrait;
 
 use super::{
     assignments::assignments_page,
@@ -16,6 +18,7 @@ use super::{
         server_time_fragment, ui_index,
     },
     htmx::assignments::assignments_table_fragment,
+    instructors::{instructor_class_detail_page, instructors_page},
 };
 use crate::domains::user::UserServiceTrait;
 
@@ -23,6 +26,8 @@ pub fn web_routes<S>() -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
     Arc<dyn AuthServiceTrait>: FromRef<S>,
+    Arc<dyn AssignmentServiceTrait>: FromRef<S>,
+    Arc<dyn ClassServiceTrait>: FromRef<S>,
     Arc<dyn UserServiceTrait>: FromRef<S>,
 {
     let protected_ui_routes = Router::new()
@@ -33,6 +38,11 @@ where
         .route(
             "/ui/fragments/assignments/table",
             get(assignments_table_fragment),
+        )
+        .route("/ui/instructors", get(instructors_page))
+        .route(
+            "/ui/instructors/classes/{id}",
+            get(instructor_class_detail_page),
         )
         .route("/ui/logout", get(logout))
         .layer(middleware::from_fn(jwt::require_ui_access))

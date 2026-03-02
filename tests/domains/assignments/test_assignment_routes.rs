@@ -70,6 +70,11 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(store.assignments.values().cloned().collect())
     }
 
+    async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
+        let store = self.store.lock().await;
+        Ok(store.assignments.values().cloned().collect())
+    }
+
     async fn get_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         let store = self.store.lock().await;
         match store.assignments.get(&id).cloned() {

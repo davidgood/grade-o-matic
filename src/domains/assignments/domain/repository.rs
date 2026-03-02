@@ -11,6 +11,7 @@ pub trait AssignmentRepositoryTrait: Send + Sync {
         Self: Sized;
 
     async fn find_all(&self) -> Result<Vec<Assignment>, sqlx::Error>;
+    async fn find_by_class_id(&self, class_id: Uuid) -> Result<Vec<Assignment>, sqlx::Error>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Assignment>, sqlx::Error>;
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<Uuid, sqlx::Error>;
     async fn update(

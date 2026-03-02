@@ -36,6 +36,15 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
         Ok(store.values().cloned().collect())
     }
 
+    async fn find_by_class_id(&self, class_id: Uuid) -> Result<Vec<Assignment>, sqlx::Error> {
+        let store = self.store.lock().await;
+        Ok(store
+            .values()
+            .filter(|assignment| assignment.class_id == class_id)
+            .cloned()
+            .collect())
+    }
+
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Assignment>, sqlx::Error> {
         let store = self.store.lock().await;
         Ok(store.get(&id).cloned())
@@ -46,13 +55,13 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
         let now = Utc::now();
         let entity = Assignment {
             id,
-            class_id: assignment.class_id.to_string(),
+            class_id: assignment.class_id,
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
-            created_by: assignment.modified_by,
+            created_by: Some(assignment.modified_by),
             created_at: Some(now),
-            modified_by: assignment.modified_by,
+            modified_by: Some(assignment.modified_by),
             modified_at: Some(now),
         };
 
@@ -71,11 +80,11 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             return Ok(None);
         };
 
-        existing.class_id = assignment.class_id.to_string();
+        existing.class_id = assignment.class_id;
         existing.title = assignment.title;
         existing.description = assignment.description;
         existing.due_at = assignment.due_at;
-        existing.modified_by = assignment.modified_by;
+        existing.modified_by = Some(assignment.modified_by);
         existing.modified_at = Some(Utc::now());
 
         Ok(Some(existing.clone()))
@@ -91,13 +100,13 @@ fn seed_assignment(id: Uuid) -> Assignment {
     let user_id = Uuid::new_v4();
     Assignment {
         id,
-        class_id: Uuid::new_v4().to_string(),
+        class_id: Uuid::new_v4(),
         title: "assignment-1".to_string(),
         description: Some("description".to_string()),
         due_at: Some(Utc::now()),
-        created_by: user_id,
+        created_by: Some(user_id),
         created_at: Some(Utc::now()),
-        modified_by: user_id,
+        modified_by: Some(user_id),
         modified_at: Some(Utc::now()),
     }
 }

@@ -5,12 +5,12 @@ use sqlx::FromRow;
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Assignment {
     pub id: uuid::Uuid,
-    pub class_id: String,
+    pub class_id: uuid::Uuid,
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
-    pub created_by: uuid::Uuid,
+    pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
-    pub modified_by: uuid::Uuid,
+    pub modified_by: Option<uuid::Uuid>,
     pub modified_at: Option<DateTime<Utc>>,
 }
