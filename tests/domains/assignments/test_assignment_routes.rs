@@ -161,7 +161,6 @@ async fn request_with_auth_and_body<T: serde::Serialize>(
     app.clone().oneshot(req).await.unwrap()
 }
 
-#[tracing::instrument(skip())]
 async fn create_assignment(app: &Router) -> (CreateAssignmentDto, AssignmentDto) {
     let class_id = Uuid::new_v4();
 
@@ -221,7 +220,7 @@ async fn test_get_assignment_by_id() {
     assert_eq!(assignment.due_at, assignment_dto.due_at);
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[tokio::test]
 async fn test_create_assignment() {
     let app = create_test_router();
     let (payload, assignment_dto) = create_assignment(&app).await;
@@ -258,7 +257,7 @@ async fn test_update_assignment() {
     assert_eq!(assignment_dto.due_at, payload.due_at);
 }
 
-#[tokio::test(flavor = "current_thread")]
+#[tokio::test]
 async fn test_delete_assignment() {
     let app = create_test_router();
     let url = format!("/assignments/{}", Uuid::new_v4());
