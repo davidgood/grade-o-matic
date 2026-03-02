@@ -54,9 +54,9 @@ where
     Arc<dyn AssignmentServiceTrait>: FromRef<S>,
 {
     Router::new()
-        .route("/assignments/{id}", get(get_assignment_by_id))
-        .route("/assignments", get(get_assignments))
-        .route("/assignments", post(create_assignment))
-        .route("/assignments/{id}", put(update_assignment))
-        .route("/assignments/{id}", delete(delete_assignment))
+        .route("/{id}", get(get_assignment_by_id))
+        .route("/", get(get_assignments))
+        .route("/", post(create_assignment))
+        .route("/{id}", put(update_assignment))
+        .route("/{id}", delete(delete_assignment))
 }

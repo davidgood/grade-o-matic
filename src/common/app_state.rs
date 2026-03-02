@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use axum::extract::FromRef;
 
+use super::config::Config;
+use crate::domains::classes::ClassServiceTrait;
 use crate::domains::{
     assignments::AssignmentServiceTrait,
     auth::AuthServiceTrait,
@@ -9,8 +11,6 @@ use crate::domains::{
     file::FileServiceTrait,
     user::{UserAssetPattern, UserServiceTrait},
 };
-
-use super::config::Config;
 
 /// AppState is a struct that holds the application-wide shared state.
 /// It is passed to request handlers via Axum's extension mechanism.
@@ -28,6 +28,8 @@ pub struct AppState {
     pub device_service: Arc<dyn DeviceServiceTrait>,
     /// Service handling file-related logic.
     pub file_service: Arc<dyn FileServiceTrait>,
+    /// Service handling class-related logic.
+    pub class_service: Arc<dyn ClassServiceTrait>,
 }
 
 impl AppState {
@@ -39,6 +41,7 @@ impl AppState {
         assignment_service: Arc<dyn AssignmentServiceTrait>,
         device_service: Arc<dyn DeviceServiceTrait>,
         file_service: Arc<dyn FileServiceTrait>,
+        class_service: Arc<dyn ClassServiceTrait>,
     ) -> Self {
         Self {
             config,
@@ -47,6 +50,7 @@ impl AppState {
             assignment_service,
             device_service,
             file_service,
+            class_service,
         }
     }
 }
@@ -78,5 +82,11 @@ impl FromRef<AppState> for Arc<dyn AssignmentServiceTrait> {
 impl FromRef<AppState> for UserAssetPattern {
     fn from_ref(input: &AppState) -> Self {
         UserAssetPattern(input.config.asset_allowed_extensions_pattern.clone())
+    }
+}
+
+impl FromRef<AppState> for Arc<dyn ClassServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.class_service)
     }
 }

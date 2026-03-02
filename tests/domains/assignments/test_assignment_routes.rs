@@ -123,7 +123,7 @@ fn create_test_router() -> Router {
     };
 
     Router::new()
-        .merge(assignment_routes::<TestState>())
+        .nest("/assignments", assignment_routes::<TestState>())
         .with_state(state)
 }
 
@@ -175,7 +175,7 @@ async fn create_assignment(app: &Router) -> (CreateAssignmentDto, AssignmentDto)
 
     let response = request_with_auth_and_body(&app, Method::POST, "/assignments", &payload).await;
 
-    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.status(), StatusCode::CREATED);
 
     let response_body: RestApiResponse<AssignmentDto> =
         deserialize_json_body(response.into_body()).await.unwrap();

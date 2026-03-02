@@ -10,6 +10,7 @@ use crate::domains::file::{FileService, FileServiceTrait};
 use crate::domains::user::UserServiceTrait;
 use crate::{common::app_state::AppState, domains::user::UserService};
 
+use crate::domains::classes::{ClassServiceTrait, create_class_service};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 /// Constructs and wires all application services and returns a configured AppState.
@@ -22,6 +23,7 @@ pub fn build_app_state(pool: PgPool, config: Config) -> AppState {
     let assignment_service: Arc<dyn AssignmentServiceTrait> =
         create_assignment_service(pool.clone());
     let device_service: Arc<dyn DeviceServiceTrait> = DeviceService::create_service(pool.clone());
+    let class_service: Arc<dyn ClassServiceTrait> = create_class_service(pool.clone());
 
     AppState::new(
         config,
@@ -30,6 +32,7 @@ pub fn build_app_state(pool: PgPool, config: Config) -> AppState {
         assignment_service,
         device_service,
         file_service,
+        class_service,
     )
 }
 
