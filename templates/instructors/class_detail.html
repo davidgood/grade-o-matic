@@ -1,0 +1,48 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+<header class="space-y-2">
+  <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100" href="/ui/instructors">
+    Back to Classes
+  </a>
+  <h1 class="text-3xl font-bold tracking-tight">{{ class.title }}</h1>
+  <p class="text-slate-600">Term: {{ class.term or "-" }}</p>
+  {% if class.description %}
+  <p class="text-slate-700 text-sm">{{ class.description }}</p>
+  {% endif %}
+</header>
+
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+  <h2 class="mb-3 text-xl font-semibold">Assignments</h2>
+
+  {% if assignments|length == 0 %}
+  <p class="text-slate-600 text-sm">No assignments in this classroom yet.</p>
+  {% else %}
+  <div class="overflow-hidden rounded-lg border border-slate-200">
+    <table class="min-w-full divide-y divide-slate-200 text-sm">
+      <thead class="bg-slate-50">
+        <tr>
+          <th class="px-4 py-2 text-left font-medium text-slate-600">Title</th>
+          <th class="px-4 py-2 text-left font-medium text-slate-600">Description</th>
+          <th class="px-4 py-2 text-left font-medium text-slate-600">Due Date</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100 bg-white">
+        {% for assignment in assignments %}
+        <tr>
+          <td class="px-4 py-2 font-medium text-slate-900">{{ assignment.title }}</td>
+          <td class="px-4 py-2 text-slate-700">{{ assignment.description or "-" }}</td>
+          <td class="px-4 py-2 text-slate-700">
+            {% if assignment.due_at %}
+              {{ assignment.due_at }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
