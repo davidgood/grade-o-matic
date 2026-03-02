@@ -135,3 +135,4 @@ Cargo.lock
 *.pdb
 
 # End of https://www.toptal.com/developers/gitignore/api/Rust,JetBrains
+/.sass-cache/

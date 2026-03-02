@@ -18,3 +18,14 @@ Testing context:
 
 Integration tests also set safe defaults in test helpers when these vars are missing, so local test runs do not require
 `.env`.
+
+## Frontend styles (SCSS)
+
+SCSS sources live in `scss/` and compile to `assets/public/grade-o-matic.css`, which is served at
+`/public/grade-o-matic.css`.
+
+Build styles:
+
+```bash
+make css
+```
