@@ -97,13 +97,14 @@ impl UserRepository for UserRepo {
 
         sqlx::query(
             r#"
-                INSERT INTO users (id, username, email, created_by, modified_by)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO users (id, username, email, user_role, created_by, modified_by)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 "#,
         )
         .bind(id)
         .bind(user.username.clone())
         .bind(user.email.clone())
+        .bind(user.user_role)
         .bind(user.modified_by)
         .bind(user.modified_by)
         .execute(&mut **tx)

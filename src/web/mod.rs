@@ -21,6 +21,13 @@ static WEB_TEMPLATES: Lazy<Environment<'static>> = Lazy::new(|| {
     .expect("Failed to register layouts/base.html");
     env.add_template("index.html", include_str!("../../templates/index.html"))
         .expect("Failed to register index.html");
+    env.add_template("login.html", include_str!("../../templates/login.html"))
+        .expect("Failed to register login.html");
+    env.add_template(
+        "admin/users_new.html",
+        include_str!("../../templates/admin/users_new.html"),
+    )
+    .expect("Failed to register admin/users_new.html");
     env.add_template(
         "assignments/index.html",
         include_str!("../../templates/assignments/index.html"),

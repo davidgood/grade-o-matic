@@ -1,7 +1,7 @@
 //! This module defines the `UserAuthRepository` trait, which provides an abstraction
 //! over database operations related to user authentication records.
 
-use super::model::UserAuth;
+use super::model::{AuthIdentity, UserAuth};
 
 use async_trait::async_trait;
 use sqlx::{PgPool, Postgres, Transaction};
@@ -16,7 +16,7 @@ pub trait UserAuthRepository: Send + Sync {
         &self,
         pool: PgPool,
         user_name: String,
-    ) -> Result<Option<UserAuth>, sqlx::Error>;
+    ) -> Result<Option<AuthIdentity>, sqlx::Error>;
 
     /// Inserts a new user authentication record into the database using a transaction.
     async fn create(

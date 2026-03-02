@@ -36,10 +36,16 @@ pub struct CreateUserMultipartDto {
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
     pub modified_by: uuid::Uuid,
+    #[serde(default = "default_user_role")]
+    pub user_role: UserRole,
     // Optional profile picture file provided as binary data.
     #[allow(dead_code)]
     #[schema(value_type = String, format = "binary", example = "profile_picture.png")]
     pub profile_picture: Option<String>,
+}
+
+fn default_user_role() -> UserRole {
+    UserRole::Student
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema, Validate)]

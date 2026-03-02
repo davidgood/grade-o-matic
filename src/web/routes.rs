@@ -1,16 +1,31 @@
-use axum::{Router, routing::get};
+use axum::{
+    Router,
+    extract::FromRef,
+    middleware,
+    routing::{get, post},
+};
+use std::sync::Arc;
+
+use crate::common::jwt;
+use crate::domains::auth::AuthServiceTrait;
 
 use super::{
     assignments::assignments_page,
-    handlers::{server_time_fragment, ui_index},
+    handlers::{
+        admin_create_user_submit, admin_users_page, login_page, login_submit, logout,
+        server_time_fragment, ui_index,
+    },
     htmx::assignments::assignments_table_fragment,
 };
+use crate::domains::user::UserServiceTrait;
 
 pub fn web_routes<S>() -> Router<S>
 where
     S: Clone + Send + Sync + 'static,
+    Arc<dyn AuthServiceTrait>: FromRef<S>,
+    Arc<dyn UserServiceTrait>: FromRef<S>,
 {
-    Router::new()
+    let protected_ui_routes = Router::new()
         .route("/", get(ui_index))
         .route("/ui", get(ui_index))
         .route("/ui/assignments", get(assignments_page))
@@ -19,4 +34,19 @@ where
             "/ui/fragments/assignments/table",
             get(assignments_table_fragment),
         )
+        .route("/ui/logout", get(logout))
+        .layer(middleware::from_fn(jwt::require_ui_access))
+        .layer(middleware::from_fn(jwt::jwt_auth_web));
+
+    let admin_ui_routes = Router::new()
+        .route("/ui/admin/users", get(admin_users_page))
+        .route("/ui/admin/users", post(admin_create_user_submit))
+        .layer(middleware::from_fn(jwt::require_admin_access))
+        .layer(middleware::from_fn(jwt::jwt_auth_web));
+
+    Router::new()
+        .route("/ui/login", get(login_page))
+        .route("/ui/login", post(login_submit))
+        .merge(protected_ui_routes)
+        .merge(admin_ui_routes)
 }

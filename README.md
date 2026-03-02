@@ -21,11 +21,25 @@ Integration tests also set safe defaults in test helpers when these vars are mis
 
 ## Frontend styles (SCSS)
 
-SCSS sources live in `scss/` and compile to `assets/public/grade-o-matic.css`, which is served at
-`/public/grade-o-matic.css`.
+SCSS sources live in `scss/` and compile to `assets/public/grade-o-matic.min.css`, which is served at
+`/assets/public/grade-o-matic.min.css`.
 
 Build styles:
 
 ```bash
 make css
+```
+
+## Database seeding
+
+Seed using `DATABASE_URL`:
+
+```bash
+make seed
+```
+
+Seed using `DATABASE_URL_TEST`:
+
+```bash
+make seed-test
 ```

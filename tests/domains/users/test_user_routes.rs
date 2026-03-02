@@ -10,6 +10,7 @@ use axum::{
     routing::delete,
 };
 use chrono::Utc;
+use grade_o_matic::domains::user::UserRole;
 use grade_o_matic::{
     common::{dto::RestApiResponse, error::AppError, jwt::Claims},
     domains::{
@@ -269,6 +270,7 @@ async fn create_user(app: &Router) -> (CreateUserMultipartDto, UserDto) {
         username,
         email,
         modified_by: TEST_USER_ID,
+        user_role: UserRole::Admin,
         profile_picture: None,
     };
 
@@ -297,6 +299,7 @@ async fn create_user_with_file(app: &Router) -> (CreateUserMultipartDto, UserDto
         username,
         email,
         modified_by: TEST_USER_ID,
+        user_role: UserRole::Admin,
         profile_picture: Some(image_file.to_string()),
     };
 
