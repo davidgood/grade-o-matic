@@ -149,6 +149,23 @@ where
     Ok(next.run(req.map(Into::into)).await)
 }
 
+/// Middleware to enforce admin-only UI routes.
+pub async fn require_admin_access<B>(req: Request<B>, next: Next) -> Result<Response, Response>
+where
+    B: Send + Into<axum::body::Body>,
+{
+    let claims = req
+        .extensions()
+        .get::<Claims>()
+        .ok_or_else(|| AppError::InvalidToken.into_response())?;
+
+    if !matches!(claims.user_role, UserRole::Admin) {
+        return Err(AppError::Forbidden.into_response());
+    }
+
+    Ok(next.run(req.map(Into::into)).await)
+}
+
 /// Role policy for web UI routes.
 pub fn can_access_ui(role: &UserRole) -> bool {
     matches!(

@@ -28,7 +28,15 @@ INSERT INTO users (id, username, email, user_role, created_by, created_at, modif
 -- Login credentials:
 --   client_id: apitest01
 --   client_secret: test_password
+--   client_id: admin01
+--   client_secret: test_password
 INSERT INTO user_auth (user_id, password_hash, created_at, modified_at) VALUES
+  (
+    '00000000-0000-0000-0000-000000000001',
+    '$argon2id$v=19$m=19456,t=2,p=1$XBFwBY52C9SpzkxON1OTLg$djDqZQvzxFKc9HOCWyZfKy+RlFTs0BJFSkcw/Tos14c',
+    NOW(),
+    NOW()
+  ),
   (
     '00000000-0000-0000-0000-000000000021',
     '$argon2id$v=19$m=19456,t=2,p=1$XBFwBY52C9SpzkxON1OTLg$djDqZQvzxFKc9HOCWyZfKy+RlFTs0BJFSkcw/Tos14c',

@@ -92,12 +92,24 @@ pub async fn create_user(
     let email = fields
         .remove("email")
         .ok_or(AppError::ValidationError("Missing email".into()))?;
+    let user_role = fields
+        .remove("user_role")
+        .map(|value| match value.as_str() {
+            "admin" => Ok(crate::domains::user::UserRole::Admin),
+            "instructor" => Ok(crate::domains::user::UserRole::Instructor),
+            "ta" => Ok(crate::domains::user::UserRole::Ta),
+            "student" => Ok(crate::domains::user::UserRole::Student),
+            _ => Err(AppError::ValidationError("Invalid user_role".into())),
+        })
+        .transpose()?
+        .unwrap_or(crate::domains::user::UserRole::Student);
 
     // Prepare the CreateUser DTO.
     let create_user = CreateUserMultipartDto {
         username,
         email,
         modified_by,
+        user_role,
         profile_picture: None,
     };
 

@@ -1,4 +1,4 @@
-use axum::response::Html;
+use axum::{Extension, response::Html};
 use axum::{
     extract::{Form, State},
     http::{StatusCode, header::SET_COOKIE},
@@ -11,6 +11,9 @@ use std::sync::Arc;
 use crate::common::error::AppError;
 use crate::common::jwt::AuthPayload;
 use crate::domains::auth::AuthServiceTrait;
+use crate::domains::auth::dto::auth_dto::AuthUserDto;
+use crate::domains::user::dto::user_dto::CreateUserMultipartDto;
+use crate::domains::user::{UserRole, UserServiceTrait};
 
 use super::render_template;
 
@@ -87,4 +90,106 @@ pub async fn logout() -> impl IntoResponse {
         )],
         Redirect::to("/ui/login"),
     )
+}
+
+#[derive(serde::Deserialize)]
+pub struct AdminCreateUserForm {
+    username: String,
+    email: String,
+    role: String,
+    password: String,
+}
+
+pub async fn admin_users_page() -> Result<Html<String>, AppError> {
+    let html = render_template(
+        "admin/users_new.html",
+        context! {
+            title => "Create User Account",
+            error => "",
+            success => "",
+            username => "",
+            email => "",
+            role => "student",
+        },
+    )?;
+    Ok(Html(html))
+}
+
+pub async fn admin_create_user_submit(
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
+    State(auth_service): State<Arc<dyn AuthServiceTrait>>,
+    Extension(claims): Extension<crate::common::jwt::Claims>,
+    Form(form): Form<AdminCreateUserForm>,
+) -> Result<Response, AppError> {
+    let user_role = parse_user_role(&form.role)?;
+
+    let create_user = CreateUserMultipartDto {
+        username: form.username.clone(),
+        email: form.email.clone(),
+        modified_by: claims.sub,
+        profile_picture: None,
+        user_role: user_role.clone(),
+    };
+
+    let created_user = match user_service.create_user(create_user, None).await {
+        Ok(user) => user,
+        Err(err) => {
+            let html = render_template(
+                "admin/users_new.html",
+                context! {
+                    title => "Create User Account",
+                    error => err.to_string(),
+                    success => "",
+                    username => form.username,
+                    email => form.email,
+                    role => form.role,
+                },
+            )?;
+            return Ok((StatusCode::BAD_REQUEST, Html(html)).into_response());
+        }
+    };
+
+    let auth_payload = AuthUserDto {
+        user_id: created_user.id,
+        password: form.password,
+    };
+
+    if let Err(err) = auth_service.create_user_auth(auth_payload).await {
+        let _ = user_service.delete_user(created_user.id).await;
+        let html = render_template(
+            "admin/users_new.html",
+            context! {
+                title => "Create User Account",
+                error => err.to_string(),
+                success => "",
+                username => form.username,
+                email => form.email,
+                role => form.role,
+            },
+        )?;
+        return Ok((StatusCode::BAD_REQUEST, Html(html)).into_response());
+    }
+
+    let html = render_template(
+        "admin/users_new.html",
+        context! {
+            title => "Create User Account",
+            error => "",
+            success => "User account created successfully.",
+            username => "",
+            email => "",
+            role => "student",
+        },
+    )?;
+    Ok((StatusCode::OK, Html(html)).into_response())
+}
+
+fn parse_user_role(input: &str) -> Result<UserRole, AppError> {
+    match input {
+        "admin" => Ok(UserRole::Admin),
+        "instructor" => Ok(UserRole::Instructor),
+        "ta" => Ok(UserRole::Ta),
+        "student" => Ok(UserRole::Student),
+        _ => Err(AppError::ValidationError("Invalid role".into())),
+    }
 }
