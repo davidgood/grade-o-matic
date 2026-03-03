@@ -50,6 +50,20 @@ where
         }
     }
 
+    async fn list_by_class(&self, class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
+        match self.repository.find_by_class_id(class_id).await {
+            Ok(assignments) => {
+                let assignment_dtos: Vec<AssignmentDto> =
+                    assignments.into_iter().map(Into::into).collect();
+                Ok(assignment_dtos)
+            }
+            Err(err) => {
+                tracing::error!("Error fetching assignments by class: {err}");
+                Err(AppError::DatabaseError(err))
+            }
+        }
+    }
+
     async fn get_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         match self.repository.find_by_id(id).await {
             Ok(Some(assignment)) => Ok(Some(AssignmentDto::from(assignment))),

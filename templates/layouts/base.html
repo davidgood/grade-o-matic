@@ -34,6 +34,23 @@
                         :aria-expanded="open.toString()"
                         aria-haspopup="true"
                 >
+                    Instructors
+                </button>
+                <div class="site-nav-panel" x-show="open" x-transition @click.outside="open = false">
+                    <a href="/ui/instructors" class="site-nav-panel-item">Classes</a>
+                </div>
+            </div>
+
+
+            <div class="site-nav-dropdown" x-data="{ open: false }">
+                <button
+                        type="button"
+                        class="site-nav-link site-nav-toggle"
+                        @click="open = !open"
+                        @keydown.escape.window="open = false"
+                        :aria-expanded="open.toString()"
+                        aria-haspopup="true"
+                >
                     Classroom
                 </button>
                 <div class="site-nav-panel" x-show="open" x-transition @click.outside="open = false">
@@ -54,8 +71,10 @@
                 </button>
                 <div class="site-nav-panel" x-show="open" x-transition @click.outside="open = false">
                     <a href="/ui/admin/users" class="site-nav-panel-item">User Accounts</a>
+                    {% if current_user is defined and current_user.role == "admin" %}
                     <a href="/docs" class="site-nav-panel-item">API Docs</a>
                     <a href="/health" class="site-nav-panel-item">Health</a>
+                    {% endif %}
                 </div>
             </div>
 

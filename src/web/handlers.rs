@@ -9,6 +9,7 @@ use minijinja::context;
 use std::sync::Arc;
 
 use crate::common::error::AppError;
+use crate::common::extractors::AdminUser;
 use crate::common::jwt::AuthPayload;
 use crate::domains::auth::AuthServiceTrait;
 use crate::domains::auth::dto::auth_dto::AuthUserDto;
@@ -100,7 +101,7 @@ pub struct AdminCreateUserForm {
     password: String,
 }
 
-pub async fn admin_users_page() -> Result<Html<String>, AppError> {
+pub async fn admin_users_page(_admin: AdminUser) -> Result<Html<String>, AppError> {
     let html = render_template(
         "admin/users_new.html",
         context! {

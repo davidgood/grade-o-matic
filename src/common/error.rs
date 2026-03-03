@@ -55,6 +55,8 @@ pub enum AppError {
     TokenCreation,
     #[error("User not found")]
     UserNotFound,
+    #[error("Unauthorized")]
+    Unauthorized,
 }
 
 /// Converts the AppError enum into an HTTP response.
@@ -76,6 +78,7 @@ impl IntoResponse for AppError {
             AppError::InvalidToken => StatusCode::UNAUTHORIZED,
             AppError::TokenCreation => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::UserNotFound => StatusCode::NOT_FOUND,
+            AppError::Unauthorized => StatusCode::UNAUTHORIZED,
         };
         let body = axum::Json(ApiResponse::<()> {
             status: status.as_u16(),

@@ -15,9 +15,14 @@ pub struct AssignmentRepository {
 const FIND_ALL_ASSIGNMENTS_QUERY: &str = r#"
     SELECT
         a.id,
+        a.class_id,
         a.title,
         a.description,
-        a.due_at
+        a.due_at,
+        a.created_by,
+        a.created_at,
+        a.modified_by,
+        a.modified_at
     FROM assignments a
     WHERE 1=1
     "#;
@@ -25,11 +30,32 @@ const FIND_ALL_ASSIGNMENTS_QUERY: &str = r#"
 const FIND_ASSIGNMENT_BY_ID_QUERY: &str = r#"
 SELECT
     a.id,
+    a.class_id,
     a.title,
     a.description,
-    a.due_at
+    a.due_at,
+    a.created_by,
+    a.created_at,
+    a.modified_by,
+    a.modified_at
     FROM assignments a
     WHERE a.id = $1"#;
+
+const FIND_ASSIGNMENTS_BY_CLASS_ID_QUERY: &str = r#"
+SELECT
+    a.id,
+    a.class_id,
+    a.title,
+    a.description,
+    a.due_at,
+    a.created_by,
+    a.created_at,
+    a.modified_by,
+    a.modified_at
+    FROM assignments a
+    WHERE a.class_id = $1
+    ORDER BY a.due_at NULLS LAST, a.created_at DESC
+"#;
 
 #[async_trait]
 impl AssignmentRepositoryTrait for AssignmentRepository {
@@ -39,6 +65,14 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
 
     async fn find_all(&self) -> Result<Vec<Assignment>, Error> {
         let assignments = sqlx::query_as::<_, Assignment>(FIND_ALL_ASSIGNMENTS_QUERY)
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(assignments)
+    }
+
+    async fn find_by_class_id(&self, class_id: Uuid) -> Result<Vec<Assignment>, Error> {
+        let assignments = sqlx::query_as::<_, Assignment>(FIND_ASSIGNMENTS_BY_CLASS_ID_QUERY)
+            .bind(class_id)
             .fetch_all(&self.pool)
             .await?;
         Ok(assignments)
