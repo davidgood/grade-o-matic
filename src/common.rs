@@ -3,6 +3,7 @@ pub mod bootstrap;
 pub mod config;
 pub mod dto;
 pub mod error;
+pub mod extractors;
 pub mod hash_util;
 pub mod jwt;
 pub mod multipart_helper;
