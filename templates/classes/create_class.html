@@ -15,7 +15,7 @@
     {% endif %}
 
     <form method="post" action="{{ form_action }}" class="space-y-3">
-        <input type="hidden" name="authenticity_token" value="{{ authenticity_token }}" />
+        <input type="hidden" name="authenticity_token" value="{{ authenticity_token|safe }}" />
         <div class="space-y-2">
             <label for="title" class="text-sm font-medium text-slate-700">Title</label>
             <input id="title" name="title" type="text"

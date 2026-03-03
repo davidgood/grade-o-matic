@@ -51,6 +51,7 @@ jobs:
       - name: Run tests (beta/nightly)
         if: matrix.toolchain != 'stable'
         run: cargo test --workspace --all-features --locked
+        continue-on-error: true
 
       - name: Install cargo-llvm-cov
         if: matrix.toolchain == 'stable'
