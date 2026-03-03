@@ -42,6 +42,29 @@ make seed
 cargo run
 ```
 
+## Use Docker
+
+A Dockerfile is provided that uses `cargo-chef` to build a production-ready image.
+
+There are several docker-compose files to choose from. I already run a postgres server locally in
+a separate container, so the root docker-compose file is only the grade-o-matic app.
+
+The `docker-compose.yml` expects to find your environment variables in a `.env` file.
+
+If you already have a postgres container running, and want to use it:
+
+```bash
+  docker compose up --build
+```
+
+If you want to run the app and postgres together:
+
+```bash
+  docker compose -f docker-compose.yml up --build
+```
+
+Add `-d` to run in detached mode as a background process.
+
 5. Open:
 
 - App UI: `http://localhost:3000/`

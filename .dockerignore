@@ -1,0 +1,28 @@
+# VCS
+.git
+.gitignore
+.github
+
+# Rust build artifacts
+target
+
+# IDE/editor
+.idea
+.vscode
+
+# Local environment/secrets
+.env
+.env.*
+!.env.example
+
+# Caches and temp files
+.sass-cache
+*.log
+*.tmp
+*.swp
+.DS_Store
+
+# Test/build outputs not needed in image context
+coverage
+dist
+tmp

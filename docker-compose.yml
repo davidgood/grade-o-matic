@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: grade-o-matic:dev
+    container_name: grade-o-matic-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      LISTEN_ADDRESS: 0.0.0.0
+      LISTEN_PORT: 3030
+      DATABASE_HOST: postgres-dev
+      DATABASE_PORT: 5432
+      DATABASE_URL: postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@host.docker.internal:5432/${DATABASE_NAME}
+    ports:
+      - "3030:3030"
