@@ -1,4 +1,4 @@
-use minijinja::{Environment, Value};
+use minijinja::{Environment, Value, path_loader};
 use once_cell::sync::Lazy;
 
 use crate::common::error::AppError;
@@ -12,9 +12,8 @@ pub mod view_models;
 
 pub use routes::web_routes;
 
-static WEB_TEMPLATES: Lazy<Environment<'static>> = Lazy::new(|| {
+fn build_embedded_environment() -> Environment<'static> {
     let mut env = Environment::new();
-
     env.add_template(
         "layouts/base.html",
         include_str!("../../templates/layouts/base.html"),
@@ -65,16 +64,36 @@ static WEB_TEMPLATES: Lazy<Environment<'static>> = Lazy::new(|| {
     )
     .expect("Failed to register instructors/index.html");
     env.add_template(
-        "instructors/class_detail.html",
-        include_str!("../../templates/instructors/class_detail.html"),
+        "classes/class_detail.html",
+        include_str!("../../templates/classes/class_detail.html"),
     )
-    .expect("Failed to register instructors/class_detail.html");
-
+    .expect("Failed to register classes/class_detail.html");
+    env.add_template(
+        "classes/create_class.html",
+        include_str!("../../templates/classes/create_class.html"),
+    )
+    .expect("Failed to register classes/create_class.html");
     env
-});
+}
+
+fn build_dev_environment() -> Environment<'static> {
+    let mut env = Environment::new();
+    env.set_loader(path_loader("templates"));
+    env
+}
+
+static WEB_TEMPLATES: Lazy<Environment<'static>> = Lazy::new(build_embedded_environment);
 
 pub fn render_template(name: &str, context: Value) -> Result<String, AppError> {
-    let template = WEB_TEMPLATES.get_template(name).map_err(|err| {
+    let dev_env;
+    let env = if cfg!(debug_assertions) {
+        dev_env = build_dev_environment();
+        &dev_env
+    } else {
+        &WEB_TEMPLATES
+    };
+
+    let template = env.get_template(name).map_err(|err| {
         tracing::error!(template = %name, error = %err, "failed to load template");
         AppError::InternalError
     })?;

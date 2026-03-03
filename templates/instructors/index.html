@@ -1,46 +1,59 @@
 {% extends "layouts/base.html" %}
 {% block content %}
 <header class="space-y-2">
-  <h1 class="text-3xl font-bold tracking-tight">Instructor Dashboard</h1>
-  <p class="text-slate-600">Classes you own.</p>
+    <h1 class="text-3xl font-bold tracking-tight">Instructor Dashboard</h1>
+    <p class="text-slate-600">Classes you own.</p>
 </header>
-
+<div class="mt-4 flex justify-between items-center">
+    <span></span>
+    <a href="/ui/instructors/classes/new"
+       class="inline-flex items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+        Create New Class
+    </a>
+</div>
 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-  {% if classes|length == 0 %}
-  <p class="text-slate-600 text-sm">No classes found for your account.</p>
-  {% else %}
-  <div class="overflow-hidden rounded-lg border border-slate-200">
-    <table class="min-w-full divide-y divide-slate-200 text-sm">
-      <thead class="bg-slate-50">
-        <tr>
-          <th class="px-4 py-2 text-left font-medium text-slate-600">Class</th>
-          <th class="px-4 py-2 text-left font-medium text-slate-600">Term</th>
-          <th class="px-4 py-2 text-left font-medium text-slate-600">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100 bg-white">
-        {% for class in classes %}
-        <tr>
-          <td class="px-4 py-2">
-            <div class="font-medium text-slate-900">{{ class.title }}</div>
-            {% if class.description %}
-            <div class="text-xs text-slate-500 mt-1">{{ class.description }}</div>
-            {% endif %}
-          </td>
-          <td class="px-4 py-2 text-slate-700">{{ class.term or "-" }}</td>
-          <td class="px-4 py-2">
-            <a
-              class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
-              href="/ui/instructors/classes/{{ class.id }}"
-            >
-              Open Classroom
-            </a>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  {% endif %}
+
+    {% if classes|length == 0 %}
+    <p class="text-slate-600 text-sm">No classes found for your account.</p>
+    {% else %}
+    <div class="overflow-hidden rounded-lg border border-slate-200">
+        <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50">
+            <tr>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Class</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Term</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Actions</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+            {% for class in classes %}
+            <tr>
+                <td class="px-4 py-2">
+                    <div class="font-medium text-slate-900">{{ class.title }}</div>
+                    {% if class.description %}
+                    <div class="text-xs text-slate-500 mt-1">{{ class.description }}</div>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-2 text-slate-700">{{ class.term or "-" }}</td>
+                <td class="px-4 py-2">
+                    <a
+                            class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
+                            href="/ui/instructors/classes/{{ class.id }}"
+                    >
+                        View
+                    </a>
+                    <a
+                            class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
+                            href="/ui/instructors/classes/{{ class.id }}/edit"
+                    >
+                        Edit
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 </section>
 {% endblock %}

@@ -3,16 +3,31 @@
 Grade-O-Matic is a classroom management and grading platform built with Rust and Axum.
 It includes JWT-based auth, role-aware UI pages, and server-rendered templates with Minijinja.
 
-Inspired by CMU's [autolab project](https://github.com/autolab/Autolab) and GitHub classrooms.
+Inspired by CMU's [autolab project](https://github.com/autolab/Autolab) (which seems abandoned) and GitHub classrooms.
 
 This was born with some custom Python scripts I wrote to fetch student code from GitHub classrooms,
-then compile (for compiled code) and run unit and integration tests.
+then compile (for compiled code) and run unit and integration tests. They've been working well for me,
+but I wanted to try something new.
 
-I wanted to evolve the project and improve my Rust skills while also adding features that I use in my own classroom.
+I wanted to evolve the "project" and improve my Rust skills while also adding features that I use in my own classroom.
+
+I bootstrapped this project with [clean-axum-demo](https://github.com/sukjaelee/clean_axum_demo) as it seemed
+to be a good starting point with an architecture very close to how I would design a layered web app, thus I can
+understand it better. My background is primarily C, C++, C#, and Python.
 
 ## Project status
 
 This project is currently a **work in progress**. Features, routes, and data models are still evolving.
+
+## Tech stack
+
+- Rust + Axum
+- SQLx (Postgres + Migrations + offline validation)
+- Minijinja (because I know Django and it works.)
+- Tailwind for styling
+- HTMX and Alpine.js
+- Docker / Docker Compose
+- PostgreSQL
 
 ## How it works
 
