@@ -22,6 +22,8 @@ use tower_http::{
 
 use utoipa::OpenApi;
 
+use axum_csrf::{CsrfConfig, CsrfLayer};
+
 use crate::{
     common::{
         app_state::AppState,
@@ -101,6 +103,7 @@ pub fn create_router(state: AppState) -> Router {
         // by default, Multipart limits to 2MB; override with `asset_max_size`
         // See https://docs.rs/axum/latest/axum/extract/struct.Multipart.html
         .layer(DefaultBodyLimit::max(state.config.asset_max_size))
+        .layer(CsrfLayer::new(CsrfConfig::default()))
         // enforce JWT authentication
         .route_layer(middleware::from_fn(jwt::jwt_auth))
         // attach inspector

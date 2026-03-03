@@ -4,6 +4,7 @@ use axum::{
     middleware,
     routing::{get, post},
 };
+use axum_csrf::{CsrfConfig, CsrfLayer};
 use std::sync::Arc;
 
 use crate::common::jwt;
@@ -66,4 +67,5 @@ where
         .route("/ui/login", post(login_submit))
         .merge(protected_ui_routes)
         .merge(admin_ui_routes)
+        .layer(CsrfLayer::new(CsrfConfig::default()))
 }

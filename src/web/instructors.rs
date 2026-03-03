@@ -5,6 +5,7 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Redirect, Response},
 };
+use axum_csrf::CsrfToken;
 use minijinja::context;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -69,10 +70,15 @@ pub async fn instructor_class_detail_page(
 
 pub async fn create_class_page(
     Extension(claims): Extension<Claims>,
-) -> Result<Html<String>, AppError> {
+    token: CsrfToken,
+) -> Result<Response, AppError> {
     if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
         return Err(AppError::Forbidden);
     }
+
+    let authenticity_token = token
+        .authenticity_token()
+        .map_err(|_| AppError::InternalError)?;
 
     let html = render_template(
         "classes/create_class.html",
@@ -84,16 +90,18 @@ pub async fn create_class_page(
             title_value => "",
             term_value => "",
             description_value => "",
+            authenticity_token => authenticity_token,
         },
     )?;
-    Ok(Html(html))
+    Ok((token, Html(html)).into_response())
 }
 
 pub async fn edit_class_page(
     Path(class_id): Path<Uuid>,
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
     Extension(claims): Extension<Claims>,
-) -> Result<Html<String>, AppError> {
+    token: CsrfToken,
+) -> Result<Response, AppError> {
     if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
         return Err(AppError::Forbidden);
     }
@@ -107,6 +115,10 @@ pub async fn edit_class_page(
         return Err(AppError::Forbidden);
     }
 
+    let authenticity_token = token
+        .authenticity_token()
+        .map_err(|_| AppError::InternalError)?;
+
     let html = render_template(
         "classes/create_class.html",
         context! {
@@ -117,9 +129,10 @@ pub async fn edit_class_page(
             title_value => "",
             term_value => "",
             description_value => "",
+            authenticity_token => authenticity_token,
         },
     )?;
-    Ok(Html(html))
+    Ok((token, Html(html)).into_response())
 }
 
 #[derive(serde::Deserialize)]
@@ -127,14 +140,20 @@ pub struct CreateClassForm {
     title: String,
     description: Option<String>,
     term: Option<String>,
+    authenticity_token: String,
 }
 
 pub async fn create_class_submit(
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
     Extension(claims): Extension<Claims>,
+    token: CsrfToken,
     Form(form): Form<CreateClassForm>,
 ) -> Result<Response, AppError> {
     if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
         return Err(AppError::Forbidden);
     }
 
@@ -151,9 +170,12 @@ pub async fn create_class_submit(
                 title_value => "",
                 term_value => term_value.clone(),
                 description_value => description_value.clone(),
+                authenticity_token => token.authenticity_token().unwrap_or_default(),
             },
         )?;
-        return Ok((StatusCode::BAD_REQUEST, Html(html)).into_response());
+        let mut response = (token, Html(html)).into_response();
+        *response.status_mut() = StatusCode::BAD_REQUEST;
+        return Ok(response);
     }
 
     let payload = CreateClassDto {
@@ -187,9 +209,12 @@ pub async fn create_class_submit(
                     title_value => form.title,
                     term_value => term_value,
                     description_value => description_value,
+                    authenticity_token => token.authenticity_token().unwrap_or_default(),
                 },
             )?;
-            Ok((StatusCode::BAD_REQUEST, Html(html)).into_response())
+            let mut response = (token, Html(html)).into_response();
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
         }
     }
 }
@@ -198,9 +223,14 @@ pub async fn edit_class_submit(
     Path(class_id): Path<Uuid>,
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
     Extension(claims): Extension<Claims>,
+    token: CsrfToken,
     Form(form): Form<CreateClassForm>,
 ) -> Result<Response, AppError> {
     if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
         return Err(AppError::Forbidden);
     }
 
@@ -228,9 +258,12 @@ pub async fn edit_class_submit(
                 title_value => title,
                 term_value => term_value,
                 description_value => description_value,
+                authenticity_token => token.authenticity_token().unwrap_or_default(),
             },
         )?;
-        return Ok((StatusCode::BAD_REQUEST, Html(html)).into_response());
+        let mut response = (token, Html(html)).into_response();
+        *response.status_mut() = StatusCode::BAD_REQUEST;
+        return Ok(response);
     }
 
     let payload = UpdateClassDto {
@@ -268,9 +301,12 @@ pub async fn edit_class_submit(
                     title_value => "",
                     term_value => term_value,
                     description_value => description_value,
+                    authenticity_token => token.authenticity_token().unwrap_or_default(),
                 },
             )?;
-            Ok((StatusCode::BAD_REQUEST, Html(html)).into_response())
+            let mut response = (token, Html(html)).into_response();
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
         }
     }
 }
