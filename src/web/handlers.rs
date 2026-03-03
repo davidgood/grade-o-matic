@@ -4,6 +4,7 @@ use axum::{
     http::{StatusCode, header::SET_COOKIE},
     response::{IntoResponse, Redirect, Response},
 };
+use axum_csrf::CsrfToken;
 use chrono::Utc;
 use minijinja::context;
 use std::sync::Arc;
@@ -32,24 +33,35 @@ pub async fn server_time_fragment() -> Html<String> {
 pub struct LoginForm {
     username: String,
     password: String,
+    authenticity_token: String,
 }
 
-pub async fn login_page() -> Result<Html<String>, AppError> {
+pub async fn login_page(token: CsrfToken) -> Result<Response, AppError> {
+    let authenticity_token = token
+        .authenticity_token()
+        .map_err(|_| AppError::InternalError)?;
+
     let html = render_template(
         "login.html",
         context! {
             title => "Login",
             error => "",
             username => "",
+            authenticity_token => authenticity_token,
         },
     )?;
-    Ok(Html(html))
+    Ok((token, Html(html)).into_response())
 }
 
 pub async fn login_submit(
     State(auth_service): State<Arc<dyn AuthServiceTrait>>,
+    token: CsrfToken,
     Form(form): Form<LoginForm>,
 ) -> Result<Response, AppError> {
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
     let payload = AuthPayload {
         client_id: form.username.clone(),
         client_secret: form.password,
@@ -75,9 +87,12 @@ pub async fn login_submit(
                     title => "Login",
                     error => err.to_string(),
                     username => form.username,
+                    authenticity_token => token.authenticity_token().unwrap_or_default(),
                 },
             )?;
-            Ok((StatusCode::UNAUTHORIZED, Html(html)).into_response())
+            let mut response = (token, Html(html)).into_response();
+            *response.status_mut() = StatusCode::UNAUTHORIZED;
+            Ok(response)
         }
     }
 }
@@ -99,9 +114,14 @@ pub struct AdminCreateUserForm {
     email: String,
     role: String,
     password: String,
+    authenticity_token: String,
 }
 
-pub async fn admin_users_page(_admin: AdminUser) -> Result<Html<String>, AppError> {
+pub async fn admin_users_page(_admin: AdminUser, token: CsrfToken) -> Result<Response, AppError> {
+    let authenticity_token = token
+        .authenticity_token()
+        .map_err(|_| AppError::InternalError)?;
+
     let html = render_template(
         "admin/users_new.html",
         context! {
@@ -111,17 +131,23 @@ pub async fn admin_users_page(_admin: AdminUser) -> Result<Html<String>, AppErro
             username => "",
             email => "",
             role => "student",
+            authenticity_token => authenticity_token,
         },
     )?;
-    Ok(Html(html))
+    Ok((token, Html(html)).into_response())
 }
 
 pub async fn admin_create_user_submit(
     State(user_service): State<Arc<dyn UserServiceTrait>>,
     State(auth_service): State<Arc<dyn AuthServiceTrait>>,
     Extension(claims): Extension<crate::common::jwt::Claims>,
+    token: CsrfToken,
     Form(form): Form<AdminCreateUserForm>,
 ) -> Result<Response, AppError> {
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
     let user_role = parse_user_role(&form.role)?;
 
     let create_user = CreateUserMultipartDto {
@@ -144,9 +170,12 @@ pub async fn admin_create_user_submit(
                     username => form.username,
                     email => form.email,
                     role => form.role,
+                    authenticity_token => token.authenticity_token().unwrap_or_default(),
                 },
             )?;
-            return Ok((StatusCode::BAD_REQUEST, Html(html)).into_response());
+            let mut response = (token, Html(html)).into_response();
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            return Ok(response);
         }
     };
 
@@ -166,9 +195,12 @@ pub async fn admin_create_user_submit(
                 username => form.username,
                 email => form.email,
                 role => form.role,
+                authenticity_token => token.authenticity_token().unwrap_or_default(),
             },
         )?;
-        return Ok((StatusCode::BAD_REQUEST, Html(html)).into_response());
+        let mut response = (token, Html(html)).into_response();
+        *response.status_mut() = StatusCode::BAD_REQUEST;
+        return Ok(response);
     }
 
     let html = render_template(
@@ -180,9 +212,12 @@ pub async fn admin_create_user_submit(
             username => "",
             email => "",
             role => "student",
+            authenticity_token => token.authenticity_token().unwrap_or_default(),
         },
     )?;
-    Ok((StatusCode::OK, Html(html)).into_response())
+    let mut response = (token, Html(html)).into_response();
+    *response.status_mut() = StatusCode::OK;
+    Ok(response)
 }
 
 fn parse_user_role(input: &str) -> Result<UserRole, AppError> {

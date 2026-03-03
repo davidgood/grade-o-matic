@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.8", features = ["multipart"] }
+axum_csrf = { version = "0.11.0", features = ["layer"] }
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "registry", "std", "fmt", "chrono"] }
 tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread", "net", "signal"] }
 tracing = "0.1.44"

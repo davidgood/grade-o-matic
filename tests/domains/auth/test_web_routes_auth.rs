@@ -5,7 +5,7 @@ use axum::{
     extract::FromRef,
     http::{
         Method, Request, StatusCode,
-        header::{AUTHORIZATION, LOCATION},
+        header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, LOCATION, SET_COOKIE},
     },
 };
 use grade_o_matic::{
@@ -22,6 +22,7 @@ use grade_o_matic::{
     },
     web::web_routes,
 };
+use http_body_util::BodyExt;
 use std::env;
 use std::sync::Arc;
 use tower::ServiceExt;
@@ -223,6 +224,47 @@ fn create_test_router() -> Router {
         .with_state(state)
 }
 
+async fn body_to_string(body: Body) -> String {
+    let bytes = body
+        .collect()
+        .await
+        .expect("body should collect")
+        .to_bytes();
+    String::from_utf8(bytes.to_vec()).expect("body should be valid utf-8")
+}
+
+fn extract_csrf_cookie(headers: &axum::http::HeaderMap) -> Option<String> {
+    headers.get_all(SET_COOKIE).iter().find_map(|value| {
+        let raw = value.to_str().ok()?;
+        raw.split(';')
+            .next()
+            .filter(|cookie| cookie.starts_with("Csrf_Token="))
+            .map(str::to_string)
+    })
+}
+
+fn extract_hidden_authenticity_token(html: &str) -> Option<String> {
+    let marker = "name=\"authenticity_token\" value=\"";
+    let start = html.find(marker)?;
+    let rest = &html[start + marker.len()..];
+    let end = rest.find('"')?;
+    Some(rest[..end].to_string())
+}
+
+fn url_encode(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for b in value.bytes() {
+        let is_unreserved = b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.' | b'_' | b'~');
+        if is_unreserved {
+            out.push(char::from(b));
+        } else {
+            out.push('%');
+            out.push_str(&format!("{b:02X}"));
+        }
+    }
+    out
+}
+
 #[tokio::test]
 async fn ui_assignments_requires_authentication() {
     ensure_jwt_env();
@@ -300,4 +342,86 @@ async fn admin_users_page_allows_admin_role() {
 
     let response = app.oneshot(req).await.expect("response should return");
     assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn login_page_issues_csrf_cookie_and_hidden_token() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/login")
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let csrf_cookie = extract_csrf_cookie(response.headers());
+    assert!(csrf_cookie.is_some(), "csrf cookie should be set");
+
+    let html = body_to_string(response.into_body()).await;
+    let authenticity_token = extract_hidden_authenticity_token(&html);
+    assert!(
+        authenticity_token.is_some(),
+        "authenticity token input should be present"
+    );
+}
+
+#[tokio::test]
+async fn login_submit_rejects_invalid_csrf_token() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/login")
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(
+            "username=admin01&password=test_password&authenticity_token=invalid",
+        ))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn login_submit_with_valid_csrf_reaches_auth_handler() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let get_req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/login")
+        .body(Body::empty())
+        .expect("request should build");
+    let get_response = app
+        .clone()
+        .oneshot(get_req)
+        .await
+        .expect("response should return");
+
+    let csrf_cookie =
+        extract_csrf_cookie(get_response.headers()).expect("csrf cookie should exist");
+    let html = body_to_string(get_response.into_body()).await;
+    let authenticity_token =
+        extract_hidden_authenticity_token(&html).expect("token should exist in form");
+    let encoded_token = url_encode(&authenticity_token);
+
+    let post_body =
+        format!("username=admin01&password=test_password&authenticity_token={encoded_token}");
+    let post_req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/login")
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .header(COOKIE, csrf_cookie)
+        .body(Body::from(post_body))
+        .expect("request should build");
+
+    let post_response = app.oneshot(post_req).await.expect("response should return");
+    // FakeAuthService always returns WrongCredentials, so valid CSRF should pass through to auth
+    // and produce UNAUTHORIZED (not FORBIDDEN).
+    assert_eq!(post_response.status(), StatusCode::UNAUTHORIZED);
 }
