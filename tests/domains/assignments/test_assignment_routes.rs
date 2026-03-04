@@ -42,6 +42,7 @@ impl FakeAssignmentService {
         let seed_id = Uuid::new_v4();
         let seed = AssignmentDto {
             id: seed_id,
+            class_id: Default::default(),
             title: "Seed Assignment".to_string(),
             description: Some("This is a seed assignment for testing purposes.".to_string()),
             due_at: Some(Utc::now()),
@@ -88,6 +89,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
 
         let assignment = AssignmentDto {
             id,
+            class_id: Default::default(),
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
