@@ -75,7 +75,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(store.assignments.values().cloned().collect())
     }
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         let store = self.store.lock().await;
         match store.assignments.get(&id).cloned() {
             Some(assignment) => Ok(Some(assignment)),

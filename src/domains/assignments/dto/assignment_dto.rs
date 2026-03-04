@@ -9,6 +9,7 @@ use validator::Validate;
 #[dto(from = Assignment)]
 pub struct AssignmentDto {
     pub id: uuid::Uuid,
+    pub class_id: uuid::Uuid,
     pub title: String,
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]

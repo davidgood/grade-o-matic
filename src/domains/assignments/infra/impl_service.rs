@@ -64,7 +64,7 @@ where
         }
     }
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         match self.repository.find_by_id(id).await {
             Ok(Some(assignment)) => Ok(Some(AssignmentDto::from(assignment))),
             Ok(None) => Err(AppError::NotFound("Assignment not found".into())),

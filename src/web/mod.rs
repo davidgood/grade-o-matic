@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use minijinja::{Environment, Value, path_loader};
 use once_cell::sync::Lazy;
 
@@ -39,10 +40,10 @@ fn build_embedded_environment() -> Environment<'static> {
     )
     .expect("Failed to register assignments/detail.html");
     env.add_template(
-        "assignments/form.html",
-        include_str!("../../templates/assignments/form.html"),
+        "assignments/create_assignment.html",
+        include_str!("../../templates/assignments/create_assignment.html"),
     )
-    .expect("Failed to register assignments/form.html");
+    .expect("Failed to register assignments/create_assignment.html");
     env.add_template(
         "assignments/_row.html",
         include_str!("../../templates/assignments/_row.html"),
@@ -73,12 +74,55 @@ fn build_embedded_environment() -> Environment<'static> {
         include_str!("../../templates/classes/create_class.html"),
     )
     .expect("Failed to register classes/create_class.html");
+
+    register_filters(&mut env);
+
     env
+}
+
+fn register_filters(env: &mut Environment<'static>) {
+    env.add_filter("format_date", format_date);
+    env.add_filter("format_datetime_local", format_datetime_local);
+}
+
+fn format_date(value: Value) -> String {
+    if value.is_undefined() {
+        return "-".to_string();
+    }
+
+    let raw = value.to_string();
+    if raw.is_empty() || raw == "none" || raw == "null" {
+        return "-".to_string();
+    }
+
+    let unquoted = raw.trim_matches('"');
+    match DateTime::parse_from_rfc3339(unquoted) {
+        Ok(dt) => dt.with_timezone(&Utc).format("%b %-d, %Y").to_string(),
+        Err(_) => raw,
+    }
+}
+
+fn format_datetime_local(value: Value) -> String {
+    if value.is_undefined() {
+        return "".to_string();
+    }
+
+    let raw = value.to_string();
+    if raw.is_empty() || raw == "none" || raw == "null" {
+        return "".to_string();
+    }
+
+    let unquoted = raw.trim_matches('"');
+    match DateTime::parse_from_rfc3339(unquoted) {
+        Ok(dt) => dt.with_timezone(&Utc).format("%Y-%m-%dT%H:%M").to_string(),
+        Err(_) => "".to_string(),
+    }
 }
 
 fn build_dev_environment() -> Environment<'static> {
     let mut env = Environment::new();
     env.set_loader(path_loader("templates"));
+    register_filters(&mut env);
     env
 }
 

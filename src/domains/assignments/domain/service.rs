@@ -16,7 +16,7 @@ pub trait AssignmentServiceTrait: Send + Sync {
     async fn list(&self) -> Result<Vec<AssignmentDto>, AppError>;
     async fn list_by_class(&self, class_id: uuid::Uuid) -> Result<Vec<AssignmentDto>, AppError>;
 
-    async fn get_by_id(&self, id: uuid::Uuid) -> Result<Option<AssignmentDto>, AppError>;
+    async fn find_by_id(&self, id: uuid::Uuid) -> Result<Option<AssignmentDto>, AppError>;
 
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<AssignmentDto, AppError>;
 

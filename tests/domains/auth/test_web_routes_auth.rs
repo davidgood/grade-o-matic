@@ -144,7 +144,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(vec![])
     }
 
-    async fn get_by_id(&self, _id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+    async fn find_by_id(&self, _id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         Ok(None)
     }
 

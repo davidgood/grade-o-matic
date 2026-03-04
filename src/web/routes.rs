@@ -20,8 +20,8 @@ use super::{
     },
     htmx::assignments::assignments_table_fragment,
     instructors::{
-        create_class_page, create_class_submit, edit_class_page, edit_class_submit,
-        instructor_class_detail_page, instructors_page,
+        create_class_page, create_class_submit, edit_assignment_page, edit_assignment_submit,
+        edit_class_page, edit_class_submit, instructor_class_detail_page, instructors_page,
     },
 };
 use crate::domains::user::UserServiceTrait;
@@ -51,6 +51,14 @@ where
         .route(
             "/ui/instructors/classes/{id}",
             get(instructor_class_detail_page),
+        )
+        .route(
+            "/ui/instructors/assignments/{id}/edit",
+            get(edit_assignment_page),
+        )
+        .route(
+            "/ui/instructors/assignments/{id}/edit",
+            post(edit_assignment_submit),
         )
         .route("/ui/logout", get(logout))
         .layer(middleware::from_fn(jwt::require_ui_access))

@@ -6,6 +6,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_csrf::CsrfToken;
+use chrono::{DateTime, NaiveDateTime, Utc};
 use minijinja::context;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -13,6 +14,7 @@ use uuid::Uuid;
 use crate::common::error::AppError;
 use crate::common::jwt::Claims;
 use crate::domains::assignments::AssignmentServiceTrait;
+use crate::domains::assignments::dto::assignment_dto::UpdateAssignmentDto;
 use crate::domains::classes::ClassServiceTrait;
 use crate::domains::classes::dto::class_dto::{CreateClassDto, UpdateClassDto};
 use crate::domains::user::UserRole;
@@ -309,4 +311,156 @@ pub async fn edit_class_submit(
             Ok(response)
         }
     }
+}
+
+pub async fn edit_assignment_page(
+    Path(assignment_id): Path<Uuid>,
+    State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+
+    Extension(claims): Extension<Claims>,
+    token: CsrfToken,
+) -> Result<Response, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    let assignment = assignment_service
+        .find_by_id(assignment_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
+
+    let class = class_service
+        .find_by_id(assignment.class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+
+    if !matches!(claims.user_role, UserRole::Admin) && class.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    let authenticity_token = token
+        .authenticity_token()
+        .map_err(|_| AppError::InternalError)?;
+
+    let html = render_template(
+        "assignments/create_assignment.html",
+        context! {
+            title => "Edit Assignment",
+            error => "",
+            assignment => assignment,
+            form_action => format!("/ui/instructors/assignments/{assignment_id}/edit"),
+            title_value => assignment.title.clone(),
+            description_value => assignment.description.clone(),
+            authenticity_token => authenticity_token,
+        },
+    )?;
+    Ok((token, Html(html)).into_response())
+}
+
+pub async fn edit_assignment_submit(
+    Path(assignment_id): Path<Uuid>,
+    State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    Extension(claims): Extension<Claims>,
+    token: CsrfToken,
+    Form(form): Form<EditAssignmentForm>,
+) -> Result<Response, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
+    let assignment = assignment_service
+        .find_by_id(assignment_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
+
+    let existing = class_service
+        .find_by_id(assignment.class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+
+    if !matches!(claims.user_role, UserRole::Admin) && existing.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    let title = form.title.trim().to_string();
+    let description_value = form.description.as_deref().unwrap_or("").trim().to_string();
+    let due_at_value = form.due_at.as_deref().unwrap_or("").trim().to_string();
+
+    if title.is_empty() {
+        let html = render_template(
+            "assignments/create_assignment.html",
+            context! {
+                title => "Edit Assignment",
+                error => "Title is required.",
+                assignment => assignment,
+                form_action => format!("/ui/instructors/assignments/{assignment_id}/edit"),
+                title_value => title,
+                description_value => description_value,
+                due_at_value => due_at_value,
+                authenticity_token => token.authenticity_token().unwrap_or_default(),
+            },
+        )?;
+        let mut response = (token, Html(html)).into_response();
+        *response.status_mut() = StatusCode::BAD_REQUEST;
+        return Ok(response);
+    }
+
+    let payload = UpdateAssignmentDto {
+        id: assignment_id,
+        class_id: assignment.class_id,
+        title,
+        description: if description_value.is_empty() {
+            None
+        } else {
+            Some(description_value.clone())
+        },
+        due_at: if due_at_value.is_empty() {
+            None
+        } else {
+            let parsed = NaiveDateTime::parse_from_str(&due_at_value, "%Y-%m-%dT%H:%M")
+                .map_err(|_| AppError::ValidationError("Invalid due date format".into()))?;
+            Some(DateTime::<Utc>::from_naive_utc_and_offset(parsed, Utc))
+        },
+        modified_by: claims.sub,
+    };
+
+    match assignment_service.update(payload).await {
+        Ok(updated) => Ok((
+            StatusCode::SEE_OTHER,
+            Redirect::to(&format!("/ui/instructors/classes/{}", updated.class_id)),
+        )
+            .into_response()),
+        Err(err) => {
+            let html = render_template(
+                "assignments/create_assignment.html",
+                context! {
+                    title => "Edit Assignment",
+                    error => err.to_string(),
+                    assignment => assignment,
+                    form_action => format!("/ui/instructors/assignments/{assignment_id}/edit"),
+                    title_value => "",
+                    due_at_value => due_at_value,
+                    description_value => description_value,
+                    authenticity_token => token.authenticity_token().unwrap_or_default(),
+                },
+            )?;
+            let mut response = (token, Html(html)).into_response();
+            *response.status_mut() = StatusCode::BAD_REQUEST;
+            Ok(response)
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub struct EditAssignmentForm {
+    title: String,
+    description: Option<String>,
+    due_at: Option<String>,
+    authenticity_token: String,
 }

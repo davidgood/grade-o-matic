@@ -138,7 +138,7 @@ async fn list_returns_assignment_dtos() {
 async fn get_by_id_returns_not_found_error_when_missing() {
     let service = build_service_with_repo(FakeAssignmentRepository::default());
     let err = service
-        .get_by_id(Uuid::new_v4())
+        .find_by_id(Uuid::new_v4())
         .await
         .expect_err("missing assignment should error");
 
