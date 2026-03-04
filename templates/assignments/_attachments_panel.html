@@ -1,0 +1,49 @@
+<section id="assignment-attachments-panel" class="mt-4 space-y-2 rounded-md border border-slate-200 p-3">
+    <h2 class="text-sm font-semibold text-slate-800">Attachments</h2>
+
+    {% if upload_message %}
+    <div class="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+        {{ upload_message }}
+    </div>
+    {% endif %}
+
+    {% if upload_error %}
+    <div class="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        {{ upload_error }}
+    </div>
+    {% endif %}
+
+    {% if attachments and attachments|length > 0 %}
+    <ul class="space-y-1 text-sm text-slate-700">
+        {% for attachment in attachments %}
+        <li>
+            <a class="text-slate-900 underline hover:text-slate-700"
+               href="/file/{{ attachment.file_id }}"
+               hx-boost="false"
+               download="{{ attachment.origin_file_name }}">
+                {{ attachment.origin_file_name }}
+            </a>
+            <span class="text-slate-500">({{ attachment.content_type }}, {{ attachment.file_size }} bytes)</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-slate-600">No files attached yet.</p>
+    {% endif %}
+
+    <form method="post"
+          action="/ui/instructors/assignments/{{ assignment.id }}/attachments"
+          hx-post="/ui/instructors/assignments/{{ assignment.id }}/attachments"
+          hx-encoding="multipart/form-data"
+          hx-target="#assignment-attachments-panel"
+          hx-swap="outerHTML"
+          enctype="multipart/form-data"
+          class="space-y-2">
+        <input type="hidden" name="authenticity_token" value="{{ authenticity_token|safe }}"/>
+        <input id="attachments" name="attachments" type="file" multiple class="auth-input"/>
+        <button type="submit"
+                class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100">
+            Upload Attachment(s)
+        </button>
+    </form>
+</section>

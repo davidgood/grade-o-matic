@@ -1,9 +1,11 @@
 use async_trait::async_trait;
 
 use crate::domains::assignments::domain::{
-    model::Assignment, repository::AssignmentRepositoryTrait,
+    model::{Assignment, AssignmentAttachment},
+    repository::AssignmentRepositoryTrait,
 };
 
+use crate::domains::assignments::domain::model::AssignmentWithAttachmentCount;
 use crate::domains::assignments::dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto};
 use sqlx::{Error, PgPool};
 use uuid::Uuid;
@@ -57,6 +59,44 @@ SELECT
     ORDER BY a.due_at NULLS LAST, a.created_at DESC
 "#;
 
+const LIST_ASSIGNMENT_ATTACHMENTS_QUERY: &str = r#"
+    SELECT
+        aa.assignment_id,
+        aa.file_id,
+        uf.file_name,
+        uf.origin_file_name,
+        uf.file_url,
+        uf.content_type,
+        uf.file_size,
+        aa.created_by,
+        aa.created_at
+    FROM assignment_attachments aa
+    INNER JOIN uploaded_files uf ON uf.id = aa.file_id
+    WHERE aa.assignment_id = $1
+    ORDER BY aa.created_at DESC
+"#;
+
+const LIST_ASSIGNMENTS_WITH_ATTACHMENT_COUNT_QUERY: &str = r#"
+    SELECT
+      a.id,
+      a.class_id,
+      a.title,
+      a.description,
+      a.due_at,
+      a.created_by,
+      a.created_at,
+      a.modified_by,
+      a.modified_at,
+      COUNT(aa.file_id)::integer AS attachment_count
+    FROM assignments a
+    LEFT JOIN assignment_attachments aa ON aa.assignment_id = a.id
+    WHERE a.class_id = $1
+    GROUP BY
+      a.id, a.class_id, a.title, a.description, a.due_at,
+      a.created_by, a.created_at, a.modified_by, a.modified_at
+    ORDER BY a.due_at NULLS LAST, a.created_at DESC;
+"#;
+
 #[async_trait]
 impl AssignmentRepositoryTrait for AssignmentRepository {
     fn new(pool: PgPool) -> Self {
@@ -78,12 +118,72 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
         Ok(assignments)
     }
 
+    async fn find_by_class_id_with_attachment_count(
+        &self,
+        id: Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCount>, Error> {
+        let assignments = sqlx::query_as::<_, AssignmentWithAttachmentCount>(
+            LIST_ASSIGNMENTS_WITH_ATTACHMENT_COUNT_QUERY,
+        )
+        .bind(id)
+        .fetch_all(&self.pool)
+        .await?;
+        Ok(assignments)
+    }
+
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Assignment>, Error> {
         let assignment = sqlx::query_as::<_, Assignment>(FIND_ASSIGNMENT_BY_ID_QUERY)
             .bind(id)
             .fetch_optional(&self.pool)
             .await?;
         Ok(assignment)
+    }
+
+    async fn list_attachments(
+        &self,
+        assignment_id: Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, Error> {
+        let attachments =
+            sqlx::query_as::<_, AssignmentAttachment>(LIST_ASSIGNMENT_ATTACHMENTS_QUERY)
+                .bind(assignment_id)
+                .fetch_all(&self.pool)
+                .await?;
+        Ok(attachments)
+    }
+
+    async fn add_attachment(
+        &self,
+        assignment_id: Uuid,
+        file_id: Uuid,
+        created_by: Uuid,
+    ) -> Result<(), Error> {
+        sqlx::query(
+            r#"
+                INSERT INTO assignment_attachments (assignment_id, file_id, created_by)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (assignment_id, file_id) DO NOTHING
+                "#,
+        )
+        .bind(assignment_id)
+        .bind(file_id)
+        .bind(created_by)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    async fn remove_attachment(&self, assignment_id: Uuid, file_id: Uuid) -> Result<bool, Error> {
+        let result = sqlx::query(
+            r#"
+                DELETE FROM assignment_attachments
+                WHERE assignment_id = $1 AND file_id = $2
+                "#,
+        )
+        .bind(assignment_id)
+        .bind(file_id)
+        .execute(&self.pool)
+        .await?;
+        Ok(result.rows_affected() > 0)
     }
 
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<Uuid, Error> {

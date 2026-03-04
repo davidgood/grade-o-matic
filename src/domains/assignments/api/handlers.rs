@@ -20,7 +20,7 @@ pub async fn get_assignment_by_id(
     State(service): State<Arc<dyn AssignmentServiceTrait>>,
     axum::extract::Path(id): axum::extract::Path<uuid::Uuid>,
 ) -> Result<impl IntoResponse, AppError> {
-    let device = service.get_by_id(id).await?;
+    let device = service.find_by_id(id).await?;
     Ok(RestApiResponse::success(device))
 }
 

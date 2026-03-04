@@ -1,6 +1,7 @@
 use crate::common::error::AppError;
+use crate::domains::assignments::domain::model::AssignmentAttachment;
 use crate::domains::assignments::dto::assignment_dto::{
-    AssignmentDto, CreateAssignmentDto, UpdateAssignmentDto,
+    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
 
 use async_trait::async_trait;
@@ -16,7 +17,28 @@ pub trait AssignmentServiceTrait: Send + Sync {
     async fn list(&self) -> Result<Vec<AssignmentDto>, AppError>;
     async fn list_by_class(&self, class_id: uuid::Uuid) -> Result<Vec<AssignmentDto>, AppError>;
 
-    async fn get_by_id(&self, id: uuid::Uuid) -> Result<Option<AssignmentDto>, AppError>;
+    async fn list_by_class_with_attachment_count(
+        &self,
+        class_id: uuid::Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCountDto>, AppError>;
+
+    async fn list_attachments(
+        &self,
+        assignment_id: uuid::Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, AppError>;
+    async fn attach_file(
+        &self,
+        assignment_id: uuid::Uuid,
+        file_id: uuid::Uuid,
+        created_by: uuid::Uuid,
+    ) -> Result<(), AppError>;
+    async fn remove_file(
+        &self,
+        assignment_id: uuid::Uuid,
+        file_id: uuid::Uuid,
+    ) -> Result<bool, AppError>;
+
+    async fn find_by_id(&self, id: uuid::Uuid) -> Result<Option<AssignmentDto>, AppError>;
 
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<AssignmentDto, AppError>;
 

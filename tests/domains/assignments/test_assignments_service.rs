@@ -5,11 +5,12 @@ use chrono::Utc;
 use grade_o_matic::{
     common::error::AppError,
     domains::assignments::{
-        Assignment, AssignmentRepositoryTrait, AssignmentService, AssignmentServiceTrait,
+        Assignment, AssignmentAttachment, AssignmentRepositoryTrait, AssignmentService,
+        AssignmentServiceTrait, AssignmentWithAttachmentCount,
         dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto},
     },
 };
-use sqlx::PgPool;
+use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -45,9 +46,57 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             .collect())
     }
 
+    async fn find_by_class_id_with_attachment_count(
+        &self,
+        class_id: Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCount>, Error> {
+        let store = self.store.lock().await;
+        Ok(store
+            .values()
+            .filter(|assignment| assignment.class_id == class_id)
+            .cloned()
+            .map(|assignment| AssignmentWithAttachmentCount {
+                id: assignment.id,
+                class_id: assignment.class_id,
+                title: assignment.title,
+                description: assignment.description,
+                due_at: assignment.due_at,
+                created_by: assignment.created_by,
+                created_at: assignment.created_at,
+                modified_by: assignment.modified_by,
+                modified_at: assignment.modified_at,
+                attachment_count: 0,
+            })
+            .collect())
+    }
+
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Assignment>, sqlx::Error> {
         let store = self.store.lock().await;
         Ok(store.get(&id).cloned())
+    }
+
+    async fn list_attachments(
+        &self,
+        _assignment_id: Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, sqlx::Error> {
+        Ok(vec![])
+    }
+
+    async fn add_attachment(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+        _created_by: Uuid,
+    ) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn remove_attachment(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+    ) -> Result<bool, sqlx::Error> {
+        Ok(true)
     }
 
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<Uuid, sqlx::Error> {
@@ -138,7 +187,7 @@ async fn list_returns_assignment_dtos() {
 async fn get_by_id_returns_not_found_error_when_missing() {
     let service = build_service_with_repo(FakeAssignmentRepository::default());
     let err = service
-        .get_by_id(Uuid::new_v4())
+        .find_by_id(Uuid::new_v4())
         .await
         .expect_err("missing assignment should error");
 

@@ -9,9 +9,11 @@ use grade_o_matic::common::dto::RestApiResponse;
 use grade_o_matic::common::error::AppError;
 use grade_o_matic::common::jwt::Claims;
 use grade_o_matic::domains::assignments::dto::assignment_dto::{
-    AssignmentDto, CreateAssignmentDto, UpdateAssignmentDto,
+    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
-use grade_o_matic::domains::assignments::{AssignmentServiceTrait, assignment_routes};
+use grade_o_matic::domains::assignments::{
+    AssignmentAttachment, AssignmentServiceTrait, assignment_routes,
+};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -42,6 +44,7 @@ impl FakeAssignmentService {
         let seed_id = Uuid::new_v4();
         let seed = AssignmentDto {
             id: seed_id,
+            class_id: Default::default(),
             title: "Seed Assignment".to_string(),
             description: Some("This is a seed assignment for testing purposes.".to_string()),
             due_at: Some(Utc::now()),
@@ -75,7 +78,47 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(store.assignments.values().cloned().collect())
     }
 
-    async fn get_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+    async fn list_by_class_with_attachment_count(
+        &self,
+        _class_id: Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCountDto>, AppError> {
+        let store = self.store.lock().await;
+        Ok(store
+            .assignments
+            .values()
+            .cloned()
+            .map(|assignment| AssignmentWithAttachmentCountDto {
+                id: assignment.id,
+                class_id: assignment.class_id,
+                title: assignment.title,
+                description: assignment.description,
+                due_at: assignment.due_at,
+                attachment_count: 0,
+            })
+            .collect())
+    }
+
+    async fn list_attachments(
+        &self,
+        _assignment_id: Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn attach_file(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+        _created_by: Uuid,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    async fn remove_file(&self, _assignment_id: Uuid, _file_id: Uuid) -> Result<bool, AppError> {
+        Ok(true)
+    }
+
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         let store = self.store.lock().await;
         match store.assignments.get(&id).cloned() {
             Some(assignment) => Ok(Some(assignment)),
@@ -88,6 +131,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
 
         let assignment = AssignmentDto {
             id,
+            class_id: Default::default(),
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
