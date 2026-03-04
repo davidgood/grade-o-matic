@@ -17,6 +17,12 @@ use grade_o_matic::{
     },
     domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
+    domains::class_memberships::{
+        ClassMembershipServiceTrait,
+        dto::class_membership_dto::{
+            ClassMembershipDto, CreateClassMembershipDto, UpdateClassMembershipDto,
+        },
+    },
     domains::classes::{ClassServiceTrait, dto::class_dto::ClassDto},
     domains::file::{FileServiceTrait, dto::file_dto::UploadFileDto},
     domains::user::{
@@ -35,6 +41,7 @@ use uuid::Uuid;
 struct TestState {
     auth_service: Arc<dyn AuthServiceTrait>,
     assignment_service: Arc<dyn AssignmentServiceTrait>,
+    class_membership_service: Arc<dyn ClassMembershipServiceTrait>,
     class_service: Arc<dyn ClassServiceTrait>,
     file_service: Arc<dyn FileServiceTrait>,
     user_asset_pattern: UserAssetPattern,
@@ -65,6 +72,12 @@ impl FromRef<TestState> for Arc<dyn ClassServiceTrait> {
     }
 }
 
+impl FromRef<TestState> for Arc<dyn ClassMembershipServiceTrait> {
+    fn from_ref(input: &TestState) -> Self {
+        Arc::clone(&input.class_membership_service)
+    }
+}
+
 impl FromRef<TestState> for Arc<dyn FileServiceTrait> {
     fn from_ref(input: &TestState) -> Self {
         Arc::clone(&input.file_service)
@@ -80,6 +93,7 @@ impl FromRef<TestState> for UserAssetPattern {
 struct FakeAuthService;
 struct FakeAssignmentService;
 struct FakeClassService;
+struct FakeClassMembershipService;
 struct FakeUserService;
 struct FakeFileService;
 
@@ -289,6 +303,46 @@ impl ClassServiceTrait for FakeClassService {
     }
 }
 
+#[async_trait]
+impl ClassMembershipServiceTrait for FakeClassMembershipService {
+    fn create_service(_pool: sqlx::PgPool) -> Arc<dyn ClassMembershipServiceTrait>
+    where
+        Self: Sized,
+    {
+        Arc::new(Self)
+    }
+
+    async fn list_by_class_id(&self, _class_id: Uuid) -> Result<Vec<ClassMembershipDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn list_by_user_id(&self, _user_id: Uuid) -> Result<Vec<ClassMembershipDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassMembershipDto>, AppError> {
+        Ok(None)
+    }
+
+    async fn create(
+        &self,
+        _membership: CreateClassMembershipDto,
+    ) -> Result<ClassMembershipDto, AppError> {
+        Err(AppError::InternalError)
+    }
+
+    async fn update(
+        &self,
+        _membership: UpdateClassMembershipDto,
+    ) -> Result<Option<ClassMembershipDto>, AppError> {
+        Ok(None)
+    }
+
+    async fn delete(&self, _id: Uuid) -> Result<String, AppError> {
+        Ok("ok".to_string())
+    }
+}
+
 fn ensure_jwt_env() {
     if env::var("JWT_SECRET_KEY").is_err() {
         unsafe {
@@ -301,6 +355,7 @@ fn create_test_router() -> Router {
     let state = TestState {
         auth_service: Arc::new(FakeAuthService),
         assignment_service: Arc::new(FakeAssignmentService),
+        class_membership_service: Arc::new(FakeClassMembershipService),
         class_service: Arc::new(FakeClassService),
         file_service: Arc::new(FakeFileService),
         user_asset_pattern: UserAssetPattern(
