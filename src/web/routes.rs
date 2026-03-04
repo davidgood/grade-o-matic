@@ -11,6 +11,7 @@ use crate::common::jwt;
 use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::auth::AuthServiceTrait;
 use crate::domains::classes::ClassServiceTrait;
+use crate::domains::file::FileServiceTrait;
 
 use super::{
     assignments::assignments_page,
@@ -22,9 +23,10 @@ use super::{
     instructors::{
         create_class_page, create_class_submit, edit_assignment_page, edit_assignment_submit,
         edit_class_page, edit_class_submit, instructor_class_detail_page, instructors_page,
+        upload_assignment_attachments,
     },
 };
-use crate::domains::user::UserServiceTrait;
+use crate::domains::user::{UserAssetPattern, UserServiceTrait};
 
 pub fn web_routes<S>() -> Router<S>
 where
@@ -32,7 +34,9 @@ where
     Arc<dyn AuthServiceTrait>: FromRef<S>,
     Arc<dyn AssignmentServiceTrait>: FromRef<S>,
     Arc<dyn ClassServiceTrait>: FromRef<S>,
+    Arc<dyn FileServiceTrait>: FromRef<S>,
     Arc<dyn UserServiceTrait>: FromRef<S>,
+    UserAssetPattern: FromRef<S>,
 {
     let protected_ui_routes = Router::new()
         .route("/", get(ui_index))
@@ -59,6 +63,10 @@ where
         .route(
             "/ui/instructors/assignments/{id}/edit",
             post(edit_assignment_submit),
+        )
+        .route(
+            "/ui/instructors/assignments/{id}/attachments",
+            post(upload_assignment_attachments),
         )
         .route("/ui/logout", get(logout))
         .layer(middleware::from_fn(jwt::require_ui_access))

@@ -29,6 +29,13 @@ pub trait FileServiceTrait: Send + Sync {
         upload_file_dto: &UploadFileDto,
     ) -> Result<Option<UploadedFileDto>, AppError>;
 
+    /// Processes an assignment file upload.
+    /// Stores the file on disk under the document namespace and persists metadata.
+    async fn process_assignment_file_upload(
+        &self,
+        upload_file_dto: &UploadFileDto,
+    ) -> Result<UploadedFileDto, AppError>;
+
     /// Retrieves file metadata by its file ID.
     async fn get_file_metadata(
         &self,

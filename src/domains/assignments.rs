@@ -23,7 +23,7 @@ mod infra {
 }
 
 pub use api::routes::assignment_routes;
-pub use domain::model::Assignment;
+pub use domain::model::{Assignment, AssignmentAttachment};
 pub use domain::repository::AssignmentRepositoryTrait;
 pub use domain::service::AssignmentServiceTrait;
 pub use infra::impl_service::AssignmentService;

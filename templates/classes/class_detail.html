@@ -25,6 +25,8 @@
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Title</th>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Description</th>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Due Date</th>
+                <th class="px-4 py-2 text-center font-medium text-slate-600">Attachments</th>
+                <th class="px-4 py-2 text-center font-medium text-slate-600">Actions</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
@@ -39,6 +41,7 @@
                     -
                     {% endif %}
                 </td>
+                <td> {{ assignment.attachment_count }}</td>
                 <td class="px-4 py-2 text-slate-700">
                     <a
                             class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"

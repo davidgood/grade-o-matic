@@ -52,5 +52,9 @@
             </a>
         </div>
     </form>
+
+    {% if assignment %}
+    {% include "assignments/_attachments_panel.html" %}
+    {% endif %}
 </section>
 {% endblock %}

@@ -11,13 +11,15 @@ use axum::{
 use grade_o_matic::{
     common::error::AppError,
     common::jwt::{self, AuthBody, AuthPayload},
-    domains::assignments::{AssignmentServiceTrait, dto::assignment_dto::AssignmentDto},
+    domains::assignments::{
+        AssignmentAttachment, AssignmentServiceTrait, dto::assignment_dto::AssignmentDto,
+    },
     domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
     domains::classes::{ClassServiceTrait, dto::class_dto::ClassDto},
     domains::file::{FileServiceTrait, dto::file_dto::UploadFileDto},
     domains::user::{
-        UserRole, UserServiceTrait,
+        UserAssetPattern, UserRole, UserServiceTrait,
         dto::user_dto::{CreateUserMultipartDto, SearchUserDto, UpdateUserDto, UserDto},
     },
     web::web_routes,
@@ -33,6 +35,8 @@ struct TestState {
     auth_service: Arc<dyn AuthServiceTrait>,
     assignment_service: Arc<dyn AssignmentServiceTrait>,
     class_service: Arc<dyn ClassServiceTrait>,
+    file_service: Arc<dyn FileServiceTrait>,
+    user_asset_pattern: UserAssetPattern,
     user_service: Arc<dyn UserServiceTrait>,
 }
 
@@ -60,10 +64,23 @@ impl FromRef<TestState> for Arc<dyn ClassServiceTrait> {
     }
 }
 
+impl FromRef<TestState> for Arc<dyn FileServiceTrait> {
+    fn from_ref(input: &TestState) -> Self {
+        Arc::clone(&input.file_service)
+    }
+}
+
+impl FromRef<TestState> for UserAssetPattern {
+    fn from_ref(input: &TestState) -> Self {
+        input.user_asset_pattern.clone()
+    }
+}
+
 struct FakeAuthService;
 struct FakeAssignmentService;
 struct FakeClassService;
 struct FakeUserService;
+struct FakeFileService;
 
 #[async_trait]
 impl AuthServiceTrait for FakeAuthService {
@@ -144,6 +161,26 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(vec![])
     }
 
+    async fn list_attachments(
+        &self,
+        _assignment_id: Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn attach_file(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+        _created_by: Uuid,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    async fn remove_file(&self, _assignment_id: Uuid, _file_id: Uuid) -> Result<bool, AppError> {
+        Ok(true)
+    }
+
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
         Ok(None)
     }
@@ -163,6 +200,47 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     }
 
     async fn delete(&self, _id: Uuid) -> Result<String, AppError> {
+        Ok("ok".to_string())
+    }
+}
+
+#[async_trait]
+impl FileServiceTrait for FakeFileService {
+    fn create_service(
+        _config: grade_o_matic::common::config::Config,
+        _pool: sqlx::PgPool,
+    ) -> Arc<dyn FileServiceTrait>
+    where
+        Self: Sized,
+    {
+        Arc::new(Self)
+    }
+
+    async fn process_profile_picture_upload(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        _upload_file_dto: &UploadFileDto,
+    ) -> Result<Option<grade_o_matic::domains::file::dto::file_dto::UploadedFileDto>, AppError>
+    {
+        Ok(None)
+    }
+
+    async fn process_assignment_file_upload(
+        &self,
+        _upload_file_dto: &UploadFileDto,
+    ) -> Result<grade_o_matic::domains::file::dto::file_dto::UploadedFileDto, AppError> {
+        Err(AppError::InternalError)
+    }
+
+    async fn get_file_metadata(
+        &self,
+        _file_id: Uuid,
+    ) -> Result<Option<grade_o_matic::domains::file::dto::file_dto::UploadedFileDto>, AppError>
+    {
+        Ok(None)
+    }
+
+    async fn delete_file(&self, _file_id: Uuid) -> Result<String, AppError> {
         Ok("ok".to_string())
     }
 }
@@ -216,6 +294,11 @@ fn create_test_router() -> Router {
         auth_service: Arc::new(FakeAuthService),
         assignment_service: Arc::new(FakeAssignmentService),
         class_service: Arc::new(FakeClassService),
+        file_service: Arc::new(FakeFileService),
+        user_asset_pattern: UserAssetPattern(
+            regex::Regex::new(r"(?i)^.*\.(jpg|jpeg|png|gif|webp|pdf)$")
+                .expect("regex should compile"),
+        ),
         user_service: Arc::new(FakeUserService),
     };
 

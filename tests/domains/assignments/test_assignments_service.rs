@@ -5,7 +5,8 @@ use chrono::Utc;
 use grade_o_matic::{
     common::error::AppError,
     domains::assignments::{
-        Assignment, AssignmentRepositoryTrait, AssignmentService, AssignmentServiceTrait,
+        Assignment, AssignmentAttachment, AssignmentRepositoryTrait, AssignmentService,
+        AssignmentServiceTrait,
         dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto},
     },
 };
@@ -48,6 +49,30 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Assignment>, sqlx::Error> {
         let store = self.store.lock().await;
         Ok(store.get(&id).cloned())
+    }
+
+    async fn list_attachments(
+        &self,
+        _assignment_id: Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, sqlx::Error> {
+        Ok(vec![])
+    }
+
+    async fn add_attachment(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+        _created_by: Uuid,
+    ) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn remove_attachment(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+    ) -> Result<bool, sqlx::Error> {
+        Ok(true)
     }
 
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<Uuid, sqlx::Error> {

@@ -11,7 +11,9 @@ use grade_o_matic::common::jwt::Claims;
 use grade_o_matic::domains::assignments::dto::assignment_dto::{
     AssignmentDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
-use grade_o_matic::domains::assignments::{AssignmentServiceTrait, assignment_routes};
+use grade_o_matic::domains::assignments::{
+    AssignmentAttachment, AssignmentServiceTrait, assignment_routes,
+};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -74,6 +76,26 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
         let store = self.store.lock().await;
         Ok(store.assignments.values().cloned().collect())
+    }
+
+    async fn list_attachments(
+        &self,
+        _assignment_id: Uuid,
+    ) -> Result<Vec<AssignmentAttachment>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn attach_file(
+        &self,
+        _assignment_id: Uuid,
+        _file_id: Uuid,
+        _created_by: Uuid,
+    ) -> Result<(), AppError> {
+        Ok(())
+    }
+
+    async fn remove_file(&self, _assignment_id: Uuid, _file_id: Uuid) -> Result<bool, AppError> {
+        Ok(true)
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<AssignmentDto>, AppError> {

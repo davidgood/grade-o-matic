@@ -55,6 +55,11 @@ fn build_embedded_environment() -> Environment<'static> {
     )
     .expect("Failed to register assignments/_status_badge.html");
     env.add_template(
+        "assignments/_attachments_panel.html",
+        include_str!("../../templates/assignments/_attachments_panel.html"),
+    )
+    .expect("Failed to register assignments/_attachments_panel.html");
+    env.add_template(
         "partials/empty_state.html",
         include_str!("../../templates/partials/empty_state.html"),
     )

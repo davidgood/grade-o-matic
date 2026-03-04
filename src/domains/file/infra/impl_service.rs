@@ -48,8 +48,12 @@ impl FileServiceTrait for FileService {
             return Err(AppError::InvalidFileData);
         }
 
+        let user_id = upload_file_dto
+            .user_id
+            .ok_or_else(|| AppError::ValidationError("User ID is missing".into()))?;
+
         let (unique_filename, file_relative_path, file_path) =
-            self.build_file_path(&file_dto.original_filename);
+            self.build_file_path(&user_id, &file_dto.original_filename);
 
         self.write_file_to_disk(&file_path, &file_dto.data)?;
 
@@ -83,6 +87,56 @@ impl FileServiceTrait for FileService {
         } else {
             Err(AppError::ValidationError("User ID is missing".into()))
         }
+    }
+
+    async fn process_assignment_file_upload(
+        &self,
+        upload_file_dto: &UploadFileDto,
+    ) -> Result<UploadedFileDto, AppError> {
+        let file_dto = &upload_file_dto.file;
+
+        if file_dto.data.is_empty() {
+            tracing::error!("File data is empty.");
+            return Err(AppError::InvalidFileData);
+        }
+
+        let user_id = upload_file_dto
+            .user_id
+            .ok_or_else(|| AppError::ValidationError("User ID is missing".into()))?;
+
+        let (unique_filename, file_relative_path, file_path) =
+            self.build_file_path_by_type(&user_id, &file_dto.original_filename, FileType::Document);
+
+        self.write_file_to_disk(&file_path, &file_dto.data)?;
+
+        let file_url = format!(
+            "{}/document/{}",
+            self.config.assets_private_url, unique_filename
+        );
+
+        let create_file_dto = CreateFileDto {
+            user_id: Some(user_id),
+            file_name: unique_filename,
+            origin_file_name: file_dto.original_filename.clone(),
+            file_relative_path,
+            file_url,
+            content_type: file_dto.content_type.clone(),
+            file_size: file_dto.data.len() as u32,
+            file_type: FileType::Document,
+            modified_by: upload_file_dto.modified_by,
+        };
+
+        let mut tx = self.pool.begin().await?;
+        let uploaded = self
+            .repo
+            .create_file(&mut tx, create_file_dto)
+            .await
+            .map_err(|err| {
+                tracing::error!("Error uploading assignment file: {}", err);
+                AppError::DatabaseError(err)
+            })?;
+        tx.commit().await?;
+        Ok(UploadedFileDto::from(uploaded))
     }
 
     /// Retrieves the metadata of a file by its id.
@@ -202,18 +256,32 @@ impl FileService {
     }
 
     /// Constructs a unique filename, relative path, and absolute disk path for the upload.
-    fn build_file_path(&self, original_filename: &str) -> (String, String, std::path::PathBuf) {
+    fn build_file_path(
+        &self,
+        user_id: &uuid::Uuid,
+        original_filename: &str,
+    ) -> (String, String, std::path::PathBuf) {
+        self.build_file_path_by_type(user_id, original_filename, FileType::ProfilePicture)
+    }
+
+    fn build_file_path_by_type(
+        &self,
+        user_id: &uuid::Uuid,
+        original_filename: &str,
+        file_type: FileType,
+    ) -> (String, String, std::path::PathBuf) {
         let base_dir = self.config.assets_private_path.as_str();
-        let base_dir_with_profile =
-            FilePath::new(base_dir).join(FileType::ProfilePicture.to_string());
+        let base_dir_with_type = FilePath::new(base_dir).join(file_type.to_string());
+        let normalized_user_id = user_id.to_string().replace("-", "");
+        let base_dir_with_type_and_user = base_dir_with_type.join(&normalized_user_id);
 
         let unique_filename = FileService::generate_unique_filename(
             original_filename,
-            base_dir_with_profile.to_str().unwrap(),
+            base_dir_with_type_and_user.to_str().unwrap(),
         );
-        let file_path = base_dir_with_profile.join(&unique_filename);
+        let file_path = base_dir_with_type_and_user.join(&unique_filename);
 
-        let relative_path = format!("{}/{}", FileType::ProfilePicture, unique_filename);
+        let relative_path = format!("{}/{}/{}", file_type, normalized_user_id, unique_filename);
         (unique_filename, relative_path, file_path)
     }
 

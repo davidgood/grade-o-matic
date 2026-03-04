@@ -87,6 +87,12 @@ impl FromRef<AppState> for Arc<dyn AssignmentServiceTrait> {
     }
 }
 
+impl FromRef<AppState> for Arc<dyn FileServiceTrait> {
+    fn from_ref(input: &AppState) -> Self {
+        Arc::clone(&input.file_service)
+    }
+}
+
 impl FromRef<AppState> for UserAssetPattern {
     fn from_ref(input: &AppState) -> Self {
         UserAssetPattern(input.config.asset_allowed_extensions_pattern.clone())
