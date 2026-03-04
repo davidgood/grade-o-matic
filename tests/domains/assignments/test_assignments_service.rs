@@ -6,11 +6,11 @@ use grade_o_matic::{
     common::error::AppError,
     domains::assignments::{
         Assignment, AssignmentAttachment, AssignmentRepositoryTrait, AssignmentService,
-        AssignmentServiceTrait,
+        AssignmentServiceTrait, AssignmentWithAttachmentCount,
         dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto},
     },
 };
-use sqlx::PgPool;
+use sqlx::{Error, PgPool};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -43,6 +43,30 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             .values()
             .filter(|assignment| assignment.class_id == class_id)
             .cloned()
+            .collect())
+    }
+
+    async fn find_by_class_id_with_attachment_count(
+        &self,
+        class_id: Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCount>, Error> {
+        let store = self.store.lock().await;
+        Ok(store
+            .values()
+            .filter(|assignment| assignment.class_id == class_id)
+            .cloned()
+            .map(|assignment| AssignmentWithAttachmentCount {
+                id: assignment.id,
+                class_id: assignment.class_id,
+                title: assignment.title,
+                description: assignment.description,
+                due_at: assignment.due_at,
+                created_by: assignment.created_by,
+                created_at: assignment.created_at,
+                modified_by: assignment.modified_by,
+                modified_at: assignment.modified_at,
+                attachment_count: 0,
+            })
             .collect())
     }
 

@@ -12,7 +12,8 @@ use grade_o_matic::{
     common::error::AppError,
     common::jwt::{self, AuthBody, AuthPayload},
     domains::assignments::{
-        AssignmentAttachment, AssignmentServiceTrait, dto::assignment_dto::AssignmentDto,
+        AssignmentAttachment, AssignmentServiceTrait,
+        dto::assignment_dto::{AssignmentDto, AssignmentWithAttachmentCountDto},
     },
     domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
@@ -158,6 +159,13 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     }
 
     async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn list_by_class_with_attachment_count(
+        &self,
+        _class_id: Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCountDto>, AppError> {
         Ok(vec![])
     }
 

@@ -9,7 +9,7 @@ use grade_o_matic::common::dto::RestApiResponse;
 use grade_o_matic::common::error::AppError;
 use grade_o_matic::common::jwt::Claims;
 use grade_o_matic::domains::assignments::dto::assignment_dto::{
-    AssignmentDto, CreateAssignmentDto, UpdateAssignmentDto,
+    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
 use grade_o_matic::domains::assignments::{
     AssignmentAttachment, AssignmentServiceTrait, assignment_routes,
@@ -76,6 +76,26 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
         let store = self.store.lock().await;
         Ok(store.assignments.values().cloned().collect())
+    }
+
+    async fn list_by_class_with_attachment_count(
+        &self,
+        _class_id: Uuid,
+    ) -> Result<Vec<AssignmentWithAttachmentCountDto>, AppError> {
+        let store = self.store.lock().await;
+        Ok(store
+            .assignments
+            .values()
+            .cloned()
+            .map(|assignment| AssignmentWithAttachmentCountDto {
+                id: assignment.id,
+                class_id: assignment.class_id,
+                title: assignment.title,
+                description: assignment.description,
+                due_at: assignment.due_at,
+                attachment_count: 0,
+            })
+            .collect())
     }
 
     async fn list_attachments(
