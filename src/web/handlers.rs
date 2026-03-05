@@ -12,6 +12,7 @@ use std::sync::Arc;
 use crate::common::error::AppError;
 use crate::common::extractors::AdminUser;
 use crate::common::jwt::AuthPayload;
+use crate::common::jwt::Claims;
 use crate::domains::auth::AuthServiceTrait;
 use crate::domains::auth::dto::auth_dto::AuthUserDto;
 use crate::domains::user::dto::user_dto::CreateUserMultipartDto;
@@ -19,8 +20,24 @@ use crate::domains::user::{UserRole, UserServiceTrait};
 
 use super::render_template;
 
-pub async fn ui_index() -> Result<Html<String>, AppError> {
-    let html = render_template("index.html", context! { title => "Grade-O-Matic" })?;
+pub async fn ui_index(Extension(claims): Extension<Claims>) -> Result<Html<String>, AppError> {
+    let user_role = match claims.user_role {
+        UserRole::Admin => "admin",
+        UserRole::Instructor => "instructor",
+        UserRole::Ta => "ta",
+        UserRole::Student => "student",
+    };
+
+    let html = render_template(
+        "index.html",
+        context! {
+            title => "Dashboard",
+            user_role => user_role,
+            current_user => context! {
+                role => user_role,
+            },
+        },
+    )?;
     Ok(Html(html))
 }
 

@@ -61,6 +61,7 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                points: assignment.points,
                 created_by: assignment.created_by,
                 created_at: assignment.created_at,
                 modified_by: assignment.modified_by,
@@ -108,6 +109,7 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
+            points: Some(100),
             created_by: Some(assignment.modified_by),
             created_at: Some(now),
             modified_by: Some(assignment.modified_by),
@@ -153,6 +155,7 @@ fn seed_assignment(id: Uuid) -> Assignment {
         title: "assignment-1".to_string(),
         description: Some("description".to_string()),
         due_at: Some(Utc::now()),
+        points: Some(100),
         created_by: Some(user_id),
         created_at: Some(Utc::now()),
         modified_by: Some(user_id),
@@ -203,6 +206,7 @@ async fn create_persists_and_returns_assignment() {
         title: "new assignment".to_string(),
         description: Some("desc".to_string()),
         due_at: Some(Utc::now()),
+        points: Some(100),
         modified_by,
     };
 
@@ -223,6 +227,7 @@ async fn update_returns_not_found_error_when_missing() {
         title: "updated".to_string(),
         description: Some("updated".to_string()),
         due_at: Some(Utc::now()),
+        points: Some(100),
         modified_by: Uuid::new_v4(),
     };
 
