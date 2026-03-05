@@ -9,6 +9,7 @@ pub mod handlers;
 pub mod htmx;
 mod instructors;
 pub mod routes;
+pub mod students;
 pub mod view_models;
 
 pub use routes::web_routes;
@@ -34,6 +35,11 @@ fn build_embedded_environment() -> Environment<'static> {
         include_str!("../../templates/assignments/index.html"),
     )
     .expect("Failed to register assignments/index.html");
+    env.add_template(
+        "assignments/student_index.html",
+        include_str!("../../templates/assignments/student_index.html"),
+    )
+    .expect("Failed to register assignments/student_index.html");
     env.add_template(
         "assignments/detail.html",
         include_str!("../../templates/assignments/detail.html"),
@@ -79,6 +85,11 @@ fn build_embedded_environment() -> Environment<'static> {
         include_str!("../../templates/classes/create_class.html"),
     )
     .expect("Failed to register classes/create_class.html");
+    env.add_template(
+        "classes/student_index.html",
+        include_str!("../../templates/classes/student_index.html"),
+    )
+    .expect("Failed to register classes/student_index.html");
 
     register_filters(&mut env);
 

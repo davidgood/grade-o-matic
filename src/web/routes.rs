@@ -18,7 +18,7 @@ use super::{
     assignments::assignments_page,
     handlers::{
         admin_create_user_submit, admin_users_page, login_page, login_submit, logout,
-        server_time_fragment, ui_index,
+        server_time_fragment, ui_index, ui_instructors_root_redirect,
     },
     htmx::assignments::assignments_table_fragment,
     instructors::{
@@ -26,6 +26,7 @@ use super::{
         edit_assignment_submit, edit_class_page, edit_class_submit, instructor_class_detail_page,
         instructors_page, remove_student_from_roster, upload_assignment_attachments,
     },
+    students::{students_assignments_page, students_classes_page},
 };
 use crate::domains::user::{UserAssetPattern, UserServiceTrait};
 
@@ -49,7 +50,13 @@ where
             "/ui/fragments/assignments/table",
             get(assignments_table_fragment),
         )
-        .route("/ui/instructors", get(instructors_page))
+        .route(
+            "/ui/instructors/fragments/assignments/table",
+            get(assignments_table_fragment),
+        )
+        .route("/ui/instructors", get(ui_instructors_root_redirect))
+        .route("/ui/instructors/classes", get(instructors_page))
+        .route("/ui/instructors/assignments", get(assignments_page))
         .route("/ui/instructors/classes/new", get(create_class_page))
         .route("/ui/instructors/classes/new", post(create_class_submit))
         .route("/ui/instructors/classes/{id}/edit", get(edit_class_page))
@@ -78,6 +85,8 @@ where
             "/ui/instructors/assignments/{id}/attachments",
             post(upload_assignment_attachments),
         )
+        .route("/ui/students/classes", get(students_classes_page))
+        .route("/ui/students/assignments", get(students_assignments_page))
         .route("/ui/logout", get(logout))
         .layer(middleware::from_fn(jwt::require_ui_access))
         .layer(middleware::from_fn(jwt::jwt_auth_web));

@@ -1,24 +1,15 @@
 {% extends "layouts/base.html" %}
 {% block content %}
 <header class="space-y-2">
-    <h1 class="text-3xl font-bold tracking-tight">Classes</h1>
-    <p class="text-slate-600">Your classes.</p>
+    <h1 class="text-3xl font-bold tracking-tight">My Classes</h1>
+    <p class="text-slate-600">Classes where you are currently enrolled.</p>
     <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100"
        href="/">Back to Home</a>
 </header>
-{% if current_user is defined and current_user.role == "admin" %}
-<div class="mt-4 flex justify-between items-center">
-    <span></span>
-    <a href="/ui/instructors/classes/new"
-       class="btn-primary">
-        Create New Class
-    </a>
-</div>
-{% endif %}
-<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
 
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
     {% if classes|length == 0 %}
-    <p class="text-slate-600 text-sm">No classes found for your account.</p>
+    <p class="text-slate-600 text-sm">You are not enrolled in any classes yet.</p>
     {% else %}
     <div class="table-frame rounded-lg border border-slate-200">
         <table class="min-w-full table-wide divide-y divide-slate-200 text-sm">
@@ -26,7 +17,6 @@
             <tr>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Class</th>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Term</th>
-                <th class="px-4 py-2 text-left font-medium text-slate-600">Actions</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
@@ -39,20 +29,6 @@
                     {% endif %}
                 </td>
                 <td class="px-4 py-2 text-slate-700">{{ class.term or "-" }}</td>
-                <td class="px-4 py-2">
-                    <a
-                            class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
-                            href="/ui/instructors/classes/{{ class.id }}"
-                    >
-                        View
-                    </a>
-                    <a
-                            class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
-                            href="/ui/instructors/classes/{{ class.id }}/edit"
-                    >
-                        Edit
-                    </a>
-                </td>
             </tr>
             {% endfor %}
             </tbody>
