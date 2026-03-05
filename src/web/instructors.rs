@@ -581,6 +581,8 @@ pub async fn edit_assignment_submit(
 
     let title = form.title.trim().to_string();
     let description_value = form.description.as_deref().unwrap_or("").trim().to_string();
+    let points = form.points;
+
     let due_at_value = form.due_at.as_deref().unwrap_or("").trim().to_string();
 
     if title.is_empty() {
@@ -621,6 +623,11 @@ pub async fn edit_assignment_submit(
             let parsed = NaiveDateTime::parse_from_str(&due_at_value, "%Y-%m-%dT%H:%M")
                 .map_err(|_| AppError::ValidationError("Invalid due date format".into()))?;
             Some(DateTime::<Utc>::from_naive_utc_and_offset(parsed, Utc))
+        },
+        points: if points.is_negative() {
+            Some(0)
+        } else {
+            Some(points)
         },
         modified_by: claims.sub,
     };
@@ -762,4 +769,5 @@ pub struct EditAssignmentForm {
     description: Option<String>,
     due_at: Option<String>,
     authenticity_token: String,
+    points: i16,
 }

@@ -14,6 +14,7 @@ pub struct AssignmentDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    pub points: Option<i16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
@@ -24,6 +25,7 @@ pub struct CreateAssignmentDto {
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
     pub modified_by: uuid::Uuid,
+    pub points: Option<i16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
@@ -35,6 +37,7 @@ pub struct UpdateAssignmentDto {
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
     pub modified_by: uuid::Uuid,
+    pub points: Option<i16>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate, DtoFrom)]
@@ -46,5 +49,6 @@ pub struct AssignmentWithAttachmentCountDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    pub points: Option<i16>,
     pub attachment_count: i32,
 }

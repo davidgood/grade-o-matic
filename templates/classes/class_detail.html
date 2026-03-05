@@ -83,12 +83,13 @@
     <p class="text-slate-600 text-sm">No assignments in this classroom yet.</p>
     {% else %}
     <div class="overflow-hidden rounded-lg border border-slate-200">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <table class="min-w-full divide-y divide-slate-250 text-sm">
             <thead class="bg-slate-50">
             <tr>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Title</th>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Description</th>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Due Date</th>
+                <th class="px-4 py-2 text-center font-medium text-slate-600">Points</th>
                 <th class="px-4 py-2 text-center font-medium text-slate-600">Attachments</th>
                 <th class="px-4 py-2 text-center font-medium text-slate-600">Actions</th>
             </tr>
@@ -105,6 +106,7 @@
                     -
                     {% endif %}
                 </td>
+                <td> {{ assignment.points }}</td>
                 <td> {{ assignment.attachment_count }}</td>
                 <td class="px-4 py-2 text-slate-700">
                     <a
