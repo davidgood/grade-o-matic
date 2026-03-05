@@ -10,6 +10,7 @@ use std::sync::Arc;
 use crate::common::jwt;
 use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::auth::AuthServiceTrait;
+use crate::domains::class_memberships::ClassMembershipServiceTrait;
 use crate::domains::classes::ClassServiceTrait;
 use crate::domains::file::FileServiceTrait;
 
@@ -21,9 +22,9 @@ use super::{
     },
     htmx::assignments::assignments_table_fragment,
     instructors::{
-        create_class_page, create_class_submit, edit_assignment_page, edit_assignment_submit,
-        edit_class_page, edit_class_submit, instructor_class_detail_page, instructors_page,
-        upload_assignment_attachments,
+        add_student_to_roster, create_class_page, create_class_submit, edit_assignment_page,
+        edit_assignment_submit, edit_class_page, edit_class_submit, instructor_class_detail_page,
+        instructors_page, remove_student_from_roster, upload_assignment_attachments,
     },
 };
 use crate::domains::user::{UserAssetPattern, UserServiceTrait};
@@ -33,6 +34,7 @@ where
     S: Clone + Send + Sync + 'static,
     Arc<dyn AuthServiceTrait>: FromRef<S>,
     Arc<dyn AssignmentServiceTrait>: FromRef<S>,
+    Arc<dyn ClassMembershipServiceTrait>: FromRef<S>,
     Arc<dyn ClassServiceTrait>: FromRef<S>,
     Arc<dyn FileServiceTrait>: FromRef<S>,
     Arc<dyn UserServiceTrait>: FromRef<S>,
@@ -55,6 +57,14 @@ where
         .route(
             "/ui/instructors/classes/{id}",
             get(instructor_class_detail_page),
+        )
+        .route(
+            "/ui/instructors/classes/{id}/roster",
+            post(add_student_to_roster),
+        )
+        .route(
+            "/ui/instructors/classes/{id}/roster/{membership_id}/delete",
+            post(remove_student_from_roster),
         )
         .route(
             "/ui/instructors/assignments/{id}/edit",

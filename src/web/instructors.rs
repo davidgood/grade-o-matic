@@ -8,6 +8,7 @@ use axum::{
 use axum_csrf::CsrfToken;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use minijinja::context;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -16,10 +17,14 @@ use crate::common::jwt::Claims;
 use crate::common::multipart_helper::parse_multipart_to_maps;
 use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::assignments::dto::assignment_dto::UpdateAssignmentDto;
+use crate::domains::class_memberships::{
+    ClassMembershipRole, ClassMembershipServiceTrait,
+    dto::class_membership_dto::CreateClassMembershipDto,
+};
 use crate::domains::classes::ClassServiceTrait;
 use crate::domains::classes::dto::class_dto::{CreateClassDto, UpdateClassDto};
 use crate::domains::file::{FileServiceTrait, dto::file_dto::UploadFileDto};
-use crate::domains::user::{UserAssetPattern, UserRole};
+use crate::domains::user::{UserAssetPattern, UserRole, UserServiceTrait};
 
 use super::render_template;
 
@@ -72,8 +77,11 @@ pub async fn instructor_class_detail_page(
     Path(class_id): Path<Uuid>,
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
     State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
+    State(class_membership_service): State<Arc<dyn ClassMembershipServiceTrait>>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
     Extension(claims): Extension<Claims>,
-) -> Result<Html<String>, AppError> {
+    token: CsrfToken,
+) -> Result<Response, AppError> {
     let class = class_service
         .find_by_id(class_id)
         .await?
@@ -88,15 +96,51 @@ pub async fn instructor_class_detail_page(
         .list_by_class_with_attachment_count(class_id)
         .await?;
 
+    let memberships = class_membership_service.list_by_class_id(class_id).await?;
+    let users = user_service.get_users().await?;
+    let user_by_id: HashMap<Uuid, _> = users.iter().map(|u| (u.id, u)).collect();
+
+    let roster_members = memberships
+        .iter()
+        .filter_map(|membership| {
+            user_by_id.get(&membership.user_id).map(|user| {
+                context! {
+                    membership_id => membership.id,
+                    user_id => user.id,
+                    username => user.username.clone(),
+                    email => user.email.clone(),
+                    role => format!("{:?}", membership.role).to_lowercase(),
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+
+    let enrolled_user_ids: HashSet<Uuid> = memberships.iter().map(|m| m.user_id).collect();
+    let available_students = users
+        .into_iter()
+        .filter(|user| matches!(user.user_role, UserRole::Student))
+        .filter(|user| !enrolled_user_ids.contains(&user.id))
+        .map(|user| {
+            context! {
+                id => user.id,
+                username => user.username,
+                email => user.email,
+            }
+        })
+        .collect::<Vec<_>>();
+
     let html = render_template(
         "classes/class_detail.html",
         context! {
             title => class.title.clone(),
             class => class,
             assignments => assignments,
+            roster_members => roster_members,
+            available_students => available_students,
+            authenticity_token => token.authenticity_token().unwrap_or_default(),
         },
     )?;
-    Ok(Html(html))
+    Ok((token, Html(html)).into_response())
 }
 
 pub async fn create_class_page(
@@ -125,6 +169,118 @@ pub async fn create_class_page(
         },
     )?;
     Ok((token, Html(html)).into_response())
+}
+
+#[derive(serde::Deserialize)]
+pub struct AddRosterStudentForm {
+    student_user_id: Uuid,
+    authenticity_token: String,
+}
+
+#[derive(serde::Deserialize)]
+pub struct RemoveRosterStudentForm {
+    authenticity_token: String,
+}
+
+pub async fn add_student_to_roster(
+    Path(class_id): Path<Uuid>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    State(class_membership_service): State<Arc<dyn ClassMembershipServiceTrait>>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
+    Extension(claims): Extension<Claims>,
+    token: CsrfToken,
+    Form(form): Form<AddRosterStudentForm>,
+) -> Result<Response, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
+    let class = class_service
+        .find_by_id(class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+
+    if !matches!(claims.user_role, UserRole::Admin) && class.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    let student = user_service.get_user_by_id(form.student_user_id).await?;
+    if !matches!(student.user_role, UserRole::Student) {
+        return Err(AppError::ValidationError(
+            "Selected user is not a student.".into(),
+        ));
+    }
+
+    match class_membership_service
+        .create(CreateClassMembershipDto {
+            class_id,
+            user_id: form.student_user_id,
+            role: ClassMembershipRole::Student,
+        })
+        .await
+    {
+        Ok(_) => Ok((
+            StatusCode::SEE_OTHER,
+            Redirect::to(&format!("/ui/instructors/classes/{class_id}")),
+        )
+            .into_response()),
+        Err(AppError::DatabaseError(err))
+            if err.to_string().contains("duplicate key value")
+                || err.to_string().contains("unique") =>
+        {
+            Ok((
+                StatusCode::SEE_OTHER,
+                Redirect::to(&format!("/ui/instructors/classes/{class_id}")),
+            )
+                .into_response())
+        }
+        Err(err) => Err(err),
+    }
+}
+
+pub async fn remove_student_from_roster(
+    Path((class_id, membership_id)): Path<(Uuid, Uuid)>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    State(class_membership_service): State<Arc<dyn ClassMembershipServiceTrait>>,
+    Extension(claims): Extension<Claims>,
+    token: CsrfToken,
+    Form(form): Form<RemoveRosterStudentForm>,
+) -> Result<Response, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
+    let class = class_service
+        .find_by_id(class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+    if !matches!(claims.user_role, UserRole::Admin) && class.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    let membership = class_membership_service
+        .find_by_id(membership_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Roster membership not found".into()))?;
+
+    if membership.class_id != class_id {
+        return Err(AppError::Forbidden);
+    }
+
+    class_membership_service.delete(membership_id).await?;
+    Ok((
+        StatusCode::SEE_OTHER,
+        Redirect::to(&format!("/ui/instructors/classes/{class_id}")),
+    )
+        .into_response())
 }
 
 pub async fn edit_class_page(
