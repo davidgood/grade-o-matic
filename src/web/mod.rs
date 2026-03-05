@@ -45,30 +45,30 @@ fn build_embedded_environment() -> Environment<'static> {
     )
     .expect("Failed to register assignments/create_assignment.html");
     env.add_template(
-        "assignments/_row.html",
-        include_str!("../../templates/assignments/_row.html"),
+        "assignments/partials/_row.html",
+        include_str!("../../templates/assignments/partials/_row.html"),
     )
-    .expect("Failed to register assignments/_row.html");
+    .expect("Failed to register assignments/partials/_row.html");
+    env.add_template(
+        "assignments/partials/_table.html",
+        include_str!("../../templates/assignments/partials/_table.html"),
+    )
+    .expect("Failed to register assignments/partials/_table.html");
     env.add_template(
         "assignments/_status_badge.html",
         include_str!("../../templates/assignments/_status_badge.html"),
     )
     .expect("Failed to register assignments/_status_badge.html");
     env.add_template(
-        "assignments/_attachments_panel.html",
-        include_str!("../../templates/assignments/_attachments_panel.html"),
+        "assignments/partials/_attachments_panel.html",
+        include_str!("../../templates/assignments/partials/_attachments_panel.html"),
     )
-    .expect("Failed to register assignments/_attachments_panel.html");
+    .expect("Failed to register assignments/partials/_attachments_panel.html");
     env.add_template(
-        "partials/empty_state.html",
-        include_str!("../../templates/partials/empty_state.html"),
+        "classes/index.html",
+        include_str!("../../templates/classes/index.html"),
     )
-    .expect("Failed to register partials/empty_state.html");
-    env.add_template(
-        "instructors/index.html",
-        include_str!("../../templates/instructors/index.html"),
-    )
-    .expect("Failed to register instructors/index.html");
+    .expect("Failed to register classes/index.html");
     env.add_template(
         "classes/class_detail.html",
         include_str!("../../templates/classes/class_detail.html"),

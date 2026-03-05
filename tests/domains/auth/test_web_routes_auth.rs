@@ -280,6 +280,16 @@ impl ClassServiceTrait for FakeClassService {
         Ok(vec![])
     }
 
+    async fn list_classes_with_assignments(
+        &self,
+        _owner_id: Uuid,
+    ) -> Result<
+        Vec<grade_o_matic::domains::classes::dto::class_dto::ClassesWithAssignmentsDto>,
+        AppError,
+    > {
+        Ok(vec![])
+    }
+
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassDto>, AppError> {
         Ok(None)
     }

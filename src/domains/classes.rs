@@ -19,7 +19,7 @@ mod infra {
 }
 
 pub use api::routes::class_routes;
-pub use domain::model::Class;
+pub use domain::model::{Class, ClassesWithAssignments};
 pub use domain::repository::ClassRepositoryTrait;
 pub use domain::service::ClassServiceTrait;
 pub use infra::impl_service::ClassService;

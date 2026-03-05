@@ -38,26 +38,11 @@
                 </button>
                 <div class="site-nav-panel" x-show="open" x-transition @click.outside="open = false">
                     <a href="/ui/instructors" class="site-nav-panel-item">Classes</a>
-                </div>
-            </div>
-
-
-            <div class="site-nav-dropdown" x-data="{ open: false }">
-                <button
-                        type="button"
-                        class="site-nav-link site-nav-toggle"
-                        @click="open = !open"
-                        @keydown.escape.window="open = false"
-                        :aria-expanded="open.toString()"
-                        aria-haspopup="true"
-                >
-                    Classroom
-                </button>
-                <div class="site-nav-panel" x-show="open" x-transition @click.outside="open = false">
                     <a href="/ui/assignments" class="site-nav-panel-item">Assignments</a>
                 </div>
             </div>
 
+            {% if current_user is defined and current_user.role == "admin" %}
             <div class="site-nav-dropdown" x-data="{ open: false }">
                 <button
                         type="button"
@@ -77,6 +62,7 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
 
             <a href="/ui/logout" class="site-nav-link">Logout</a>
         </nav>

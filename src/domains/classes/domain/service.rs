@@ -1,5 +1,7 @@
 use crate::common::error::AppError;
-use crate::domains::classes::dto::class_dto::{ClassDto, CreateClassDto, UpdateClassDto};
+use crate::domains::classes::dto::class_dto::{
+    ClassDto, ClassesWithAssignmentsDto, CreateClassDto, UpdateClassDto,
+};
 use async_trait::async_trait;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -11,6 +13,10 @@ pub trait ClassServiceTrait: Send + Sync {
         Self: Sized;
 
     async fn list(&self) -> Result<Vec<ClassDto>, AppError>;
+    async fn list_classes_with_assignments(
+        &self,
+        owner_id: uuid::Uuid,
+    ) -> Result<Vec<ClassesWithAssignmentsDto>, AppError>;
     async fn find_by_id(&self, id: uuid::Uuid) -> Result<Option<ClassDto>, AppError>;
     async fn create(&self, class: CreateClassDto) -> Result<ClassDto, AppError>;
     async fn update(&self, class: UpdateClassDto) -> Result<Option<ClassDto>, AppError>;

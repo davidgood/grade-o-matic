@@ -1,7 +1,9 @@
 use crate::common::error::AppError;
 use crate::domains::classes::domain::repository::ClassRepositoryTrait;
 use crate::domains::classes::domain::service::ClassServiceTrait;
-use crate::domains::classes::dto::class_dto::{ClassDto, CreateClassDto, UpdateClassDto};
+use crate::domains::classes::dto::class_dto::{
+    ClassDto, ClassesWithAssignmentsDto, CreateClassDto, UpdateClassDto,
+};
 use async_trait::async_trait;
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -40,6 +42,26 @@ where
             }
             Err(err) => {
                 tracing::error!("Error fetching classes: {err}");
+                Err(AppError::DatabaseError(err))
+            }
+        }
+    }
+
+    async fn list_classes_with_assignments(
+        &self,
+        owner_id: Uuid,
+    ) -> Result<Vec<ClassesWithAssignmentsDto>, AppError> {
+        match self
+            .repository
+            .list_classes_with_assignments(owner_id)
+            .await
+        {
+            Ok(rows) => {
+                let class_assignment_dtos = rows.into_iter().map(Into::into).collect();
+                Ok(class_assignment_dtos)
+            }
+            Err(err) => {
+                tracing::error!("Error fetching classes with assignments: {err}");
                 Err(AppError::DatabaseError(err))
             }
         }

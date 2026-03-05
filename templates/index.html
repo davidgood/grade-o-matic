@@ -1,87 +1,87 @@
 {% extends "layouts/base.html" %}
 {% block content %}
 <section class="hero-surface space-y-2">
-  <p class="text-sm font-semibold text-slate-600">Dashboard</p>
-  {% if user_role == "admin" %}
-  <h1 class="text-3xl font-bold tracking-tight">Admin Control Center</h1>
-  <p class="text-slate-700">Manage accounts, monitor system health, and keep platform operations clean.</p>
-  {% elif user_role == "instructor" %}
-  <h1 class="text-3xl font-bold tracking-tight">Instructor Workspace</h1>
-  <p class="text-slate-700">Create classes, manage rosters, and keep assignments moving.</p>
-  {% elif user_role == "ta" %}
-  <h1 class="text-3xl font-bold tracking-tight">Teaching Assistant Workspace</h1>
-  <p class="text-slate-700">Track assignment workflow, help students, and support class operations.</p>
-  {% else %}
-  <h1 class="text-3xl font-bold tracking-tight">Student Dashboard</h1>
-  <p class="text-slate-700">See assignments, deadlines, and what to work on next.</p>
-  {% endif %}
+    <p class="text-sm font-semibold text-slate-600">Dashboard</p>
+    {% if user_role == "admin" %}
+    <h1 class="text-3xl font-bold tracking-tight">Admin Control Center</h1>
+    <p class="text-slate-700">Manage accounts, monitor system health, and keep platform operations clean.</p>
+    {% elif user_role == "instructor" %}
+    <h1 class="text-3xl font-bold tracking-tight">Instructor Workspace</h1>
+    <p class="text-slate-700">Create classes, manage rosters, and keep assignments moving.</p>
+    {% elif user_role == "ta" %}
+    <h1 class="text-3xl font-bold tracking-tight">Teaching Assistant Workspace</h1>
+    <p class="text-slate-700">Track assignment workflow, help students, and support class operations.</p>
+    {% else %}
+    <h1 class="text-3xl font-bold tracking-tight">Student Dashboard</h1>
+    <p class="text-slate-700">See assignments, deadlines, and what to work on next.</p>
+    {% endif %}
 </section>
 
 <section class="dashboard-grid">
-  {% if user_role == "admin" %}
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">User Accounts</h2>
-    <p class="text-sm text-slate-600">Create and manage instructor, TA, and student accounts.</p>
-    <a class="btn-primary" href="/ui/admin/users">Open User Admin</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">API Docs</h2>
-    <p class="text-sm text-slate-600">Review endpoints and contracts while iterating backend features.</p>
-    <a class="btn-secondary" href="/docs">Open API Docs</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Platform Health</h2>
-    <p class="text-sm text-slate-600">Check service health and quickly verify uptime status.</p>
-    <a class="btn-secondary" href="/health">View Health</a>
-  </article>
-  {% elif user_role == "instructor" %}
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Classes</h2>
-    <p class="text-sm text-slate-600">Open your instructor dashboard to manage all owned classes.</p>
-    <a class="btn-primary" href="/ui/instructors">Go to Instructor Dashboard</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Assignments</h2>
-    <p class="text-sm text-slate-600">Review assignment status and jump into updates quickly.</p>
-    <a class="btn-secondary" href="/ui/assignments">Open Assignments</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Create Class</h2>
-    <p class="text-sm text-slate-600">Start a new class and begin building a roster.</p>
-    <a class="btn-secondary" href="/ui/instructors/classes/new">Create a Class</a>
-  </article>
-  {% elif user_role == "ta" %}
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Assignments</h2>
-    <p class="text-sm text-slate-600">Track active work and keep grading support moving.</p>
-    <a class="btn-primary" href="/ui/assignments">Open Assignments</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Classroom View</h2>
-    <p class="text-sm text-slate-600">Access instructor pages to assist with class operations.</p>
-    <a class="btn-secondary" href="/ui/instructors">Open Classroom Tools</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">System Access</h2>
-    <p class="text-sm text-slate-600">If granted admin rights, account management is available in System.</p>
-    <a class="btn-secondary" href="/ui/admin/users">Open User Accounts</a>
-  </article>
-  {% else %}
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Assignments</h2>
-    <p class="text-sm text-slate-600">Check current assignment items and upcoming due dates.</p>
-    <a class="btn-primary" href="/ui/assignments">View Assignments</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Classroom</h2>
-    <p class="text-sm text-slate-600">Access class-related pages and stay in sync with course work.</p>
-    <a class="btn-secondary" href="/ui/instructors">Open Classroom</a>
-  </article>
-  <article class="dashboard-card">
-    <h2 class="text-xl font-semibold">Account</h2>
-    <p class="text-sm text-slate-600">End your session securely when finished.</p>
-    <a class="btn-secondary" href="/ui/logout">Sign Out</a>
-  </article>
-  {% endif %}
+    {% if user_role == "admin" %}
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">User Accounts</h2>
+        <p class="text-sm text-slate-600">Create and manage instructor, TA, and student accounts.</p>
+        <a class="btn-primary" href="/ui/admin/users">Open User Admin</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">API Docs</h2>
+        <p class="text-sm text-slate-600">Review endpoints and contracts while iterating backend features.</p>
+        <a class="btn-secondary" href="/docs">Open API Docs</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Platform Health</h2>
+        <p class="text-sm text-slate-600">Check service health and quickly verify uptime status.</p>
+        <a class="btn-secondary" href="/health">View Health</a>
+    </article>
+    {% elif user_role == "instructor" %}
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Classes</h2>
+        <p class="text-sm text-slate-600">Review and manage classes.</p>
+        <a class="btn-primary" href="/ui/instructors">Open Classes</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Assignments</h2>
+        <p class="text-sm text-slate-600">Review assignment status and jump into updates quickly.</p>
+        <a class="btn-primary" href="/ui/assignments">Open Assignments</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Create Class</h2>
+        <p class="text-sm text-slate-600">Start a new class and begin building a roster.</p>
+        <a class="btn-primary" href="/ui/instructors/classes/new">Create a Class</a>
+    </article>
+    {% elif user_role == "ta" %}
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Assignments</h2>
+        <p class="text-sm text-slate-600">Track active work and keep grading support moving.</p>
+        <a class="btn-primary" href="/ui/assignments">Open Assignments</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Classroom View</h2>
+        <p class="text-sm text-slate-600">Access instructor pages to assist with class operations.</p>
+        <a class="btn-secondary" href="/ui/instructors">Open Classroom Tools</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">System Access</h2>
+        <p class="text-sm text-slate-600">If granted admin rights, account management is available in System.</p>
+        <a class="btn-secondary" href="/ui/admin/users">Open User Accounts</a>
+    </article>
+    {% else %}
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Assignments</h2>
+        <p class="text-sm text-slate-600">Check current assignment items and upcoming due dates.</p>
+        <a class="btn-primary" href="/ui/assignments">View Assignments</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Classroom</h2>
+        <p class="text-sm text-slate-600">Access class-related pages and stay in sync with course work.</p>
+        <a class="btn-secondary" href="/ui/instructors">Open Classroom</a>
+    </article>
+    <article class="dashboard-card">
+        <h2 class="text-xl font-semibold">Account</h2>
+        <p class="text-sm text-slate-600">End your session securely when finished.</p>
+        <a class="btn-secondary" href="/ui/logout">Sign Out</a>
+    </article>
+    {% endif %}
 </section>
 {% endblock %}

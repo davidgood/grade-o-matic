@@ -1,0 +1,25 @@
+<tr>
+    <td class="px-4 py-2 font-medium text-slate-900">{{ assignment.class_title }}</td>
+    <td class="px-4 py-2 text-slate-700">{{ assignment.assignment_title or "-" }}</td>
+    <td class="px-4 py-2 text-slate-700">{{ assignment.assignment_description or "-" }}</td>
+    <td class="px-4 py-2 text-slate-700">
+        {% if assignment.due_at %}
+        {{ assignment.due_at|format_date }}
+        {% else %}
+        -
+        {% endif %}
+    </td>
+    <td class="px-4 py-2 text-center text-slate-700">{{ assignment.points or "-" }}</td>
+    <td class="px-4 py-2 text-center">
+        {% if assignment.assignment_id %}
+        <a
+                class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
+                href="/ui/instructors/assignments/{{ assignment.assignment_id }}/edit"
+        >
+            Edit
+        </a>
+        {% else %}
+        <span class="text-xs text-slate-500">No assignment</span>
+        {% endif %}
+    </td>
+</tr>

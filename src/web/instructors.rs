@@ -64,7 +64,7 @@ pub async fn instructors_page(
         .collect::<Vec<_>>();
 
     let html = render_template(
-        "instructors/index.html",
+        "classes/index.html",
         context! {
             title => "Instructors",
             classes => owned_classes,
@@ -702,7 +702,7 @@ pub async fn upload_assignment_attachments(
     let attachments = files.remove("attachments").unwrap_or_default();
     if attachments.is_empty() {
         let panel = render_template(
-            "assignments/_attachments_panel.html",
+            "assignments/partials/_attachments_panel.html",
             context! {
                 assignment => assignment,
                 attachments => deps.assignment_service.list_attachments(assignment_id).await?,
@@ -731,7 +731,7 @@ pub async fn upload_assignment_attachments(
             Ok(uploaded) => uploaded,
             Err(err) => {
                 let panel = render_template(
-                    "assignments/_attachments_panel.html",
+                    "assignments/partials/_attachments_panel.html",
                     context! {
                         assignment => assignment,
                         attachments => deps.assignment_service.list_attachments(assignment_id).await?,
@@ -751,7 +751,7 @@ pub async fn upload_assignment_attachments(
     }
 
     let panel = render_template(
-        "assignments/_attachments_panel.html",
+        "assignments/partials/_attachments_panel.html",
         context! {
             assignment => assignment,
             attachments => deps.assignment_service.list_attachments(assignment_id).await?,

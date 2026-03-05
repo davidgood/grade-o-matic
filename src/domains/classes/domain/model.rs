@@ -14,3 +14,15 @@ pub struct Class {
     pub modified_by: Option<uuid::Uuid>,
     pub modified_at: Option<DateTime<Utc>>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct ClassesWithAssignments {
+    pub class_id: uuid::Uuid,
+    pub class_title: String,
+    pub class_term: Option<String>,
+    pub assignment_id: Option<uuid::Uuid>,
+    pub assignment_title: Option<String>,
+    pub assignment_description: Option<String>,
+    pub due_at: Option<DateTime<Utc>>,
+    pub points: Option<i16>,
+}
