@@ -125,6 +125,10 @@ pub async fn logout() -> impl IntoResponse {
     )
 }
 
+pub async fn ui_instructors_root_redirect() -> impl IntoResponse {
+    Redirect::to("/ui/instructors/classes")
+}
+
 #[derive(serde::Deserialize)]
 pub struct AdminCreateUserForm {
     username: String,

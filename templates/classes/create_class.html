@@ -39,7 +39,7 @@
                     class="btn-primary">
                 {% if class %}Update Class{% else %}Save Class{% endif %}
             </button>
-            <a href="{% if class %}/ui/instructors/classes/{{ class.id }}{% else %}/ui/instructors{% endif %}"
+            <a href="{% if class %}/ui/instructors/classes/{{ class.id }}{% else %}/ui/instructors/classes{% endif %}"
                class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100">
                 Cancel
             </a>

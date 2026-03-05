@@ -3,7 +3,7 @@
 <header class="space-y-2">
     <h1 class="text-3xl font-bold tracking-tight">Assignments</h1>
     <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100"
-       href="/">Back to Home</a>
+       href="/ui/instructors/classes">Back to Classes</a>
 </header>
 
 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm" x-data="{ showFilters: false }">
@@ -14,7 +14,7 @@
         </button>
         <button
                 class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700"
-                hx-get="/ui/fragments/assignments/table"
+                hx-get="/ui/instructors/fragments/assignments/table"
                 hx-target="#assignments-table"
                 hx-swap="innerHTML"
         >
