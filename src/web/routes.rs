@@ -41,11 +41,16 @@ where
     Arc<dyn UserServiceTrait>: FromRef<S>,
     UserAssetPattern: FromRef<S>,
 {
-    let protected_ui_routes = Router::new()
+    let shared_ui_routes = Router::new()
         .route("/", get(ui_index))
         .route("/ui", get(ui_index))
-        .route("/ui/assignments", get(assignments_page))
         .route("/ui/fragments/server-time", get(server_time_fragment))
+        .route("/ui/logout", get(logout))
+        .layer(middleware::from_fn(jwt::require_ui_access))
+        .layer(middleware::from_fn(jwt::jwt_auth_web));
+
+    let instructor_ui_routes = Router::new()
+        .route("/ui/assignments", get(assignments_page))
         .route(
             "/ui/fragments/assignments/table",
             get(assignments_table_fragment),
@@ -85,10 +90,13 @@ where
             "/ui/instructors/assignments/{id}/attachments",
             post(upload_assignment_attachments),
         )
+        .layer(middleware::from_fn(jwt::require_instructor_ui_access))
+        .layer(middleware::from_fn(jwt::jwt_auth_web));
+
+    let student_ui_routes = Router::new()
         .route("/ui/students/classes", get(students_classes_page))
         .route("/ui/students/assignments", get(students_assignments_page))
-        .route("/ui/logout", get(logout))
-        .layer(middleware::from_fn(jwt::require_ui_access))
+        .layer(middleware::from_fn(jwt::require_student_ui_access))
         .layer(middleware::from_fn(jwt::jwt_auth_web));
 
     let admin_ui_routes = Router::new()
@@ -100,7 +108,9 @@ where
     Router::new()
         .route("/ui/login", get(login_page))
         .route("/ui/login", post(login_submit))
-        .merge(protected_ui_routes)
+        .merge(shared_ui_routes)
+        .merge(instructor_ui_routes)
+        .merge(student_ui_routes)
         .merge(admin_ui_routes)
         .layer(CsrfLayer::new(CsrfConfig::default()))
 }

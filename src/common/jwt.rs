@@ -166,12 +166,55 @@ where
     Ok(next.run(req.map(Into::into)).await)
 }
 
+/// Middleware to enforce instructor-area UI access.
+/// Allows admin, instructor, and TA roles.
+pub async fn require_instructor_ui_access<B>(
+    req: Request<B>,
+    next: Next,
+) -> Result<Response, Response>
+where
+    B: Send + Into<axum::body::Body>,
+{
+    let claims = req
+        .extensions()
+        .get::<Claims>()
+        .ok_or_else(|| AppError::InvalidToken.into_response())?;
+
+    if !can_access_instructor_ui(&claims.user_role) {
+        return Err(AppError::Forbidden.into_response());
+    }
+
+    Ok(next.run(req.map(Into::into)).await)
+}
+
+/// Middleware to enforce student-area UI access.
+/// Allows only student role.
+pub async fn require_student_ui_access<B>(req: Request<B>, next: Next) -> Result<Response, Response>
+where
+    B: Send + Into<axum::body::Body>,
+{
+    let claims = req
+        .extensions()
+        .get::<Claims>()
+        .ok_or_else(|| AppError::InvalidToken.into_response())?;
+
+    if !matches!(claims.user_role, UserRole::Student) {
+        return Err(AppError::Forbidden.into_response());
+    }
+
+    Ok(next.run(req.map(Into::into)).await)
+}
+
 /// Role policy for web UI routes.
 pub fn can_access_ui(role: &UserRole) -> bool {
     matches!(
         role,
         UserRole::Admin | UserRole::Instructor | UserRole::Ta | UserRole::Student
     )
+}
+
+pub fn can_access_instructor_ui(role: &UserRole) -> bool {
+    matches!(role, UserRole::Admin | UserRole::Instructor | UserRole::Ta)
 }
 
 /// Middleware to validate JWT for browser UI routes.

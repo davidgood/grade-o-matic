@@ -3,6 +3,7 @@ use crate::common::jwt::Claims;
 use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::class_memberships::ClassMembershipServiceTrait;
 use crate::domains::classes::ClassServiceTrait;
+use crate::domains::user::UserRole;
 use crate::web::render_template;
 use axum::Extension;
 use axum::extract::State;
@@ -16,6 +17,10 @@ pub async fn students_classes_page(
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
     Extension(claims): Extension<Claims>,
 ) -> Result<Html<String>, AppError> {
+    if !matches!(claims.user_role, UserRole::Student) {
+        return Err(AppError::Forbidden);
+    }
+
     let memberships = class_membership_service.list_by_user_id(claims.sub).await?;
 
     let mut classes = Vec::new();
@@ -55,6 +60,10 @@ pub async fn students_assignments_page(
     State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
     Extension(claims): Extension<Claims>,
 ) -> Result<Html<String>, AppError> {
+    if !matches!(claims.user_role, UserRole::Student) {
+        return Err(AppError::Forbidden);
+    }
+
     let memberships = class_membership_service.list_by_user_id(claims.sub).await?;
 
     let mut rows = Vec::new();
