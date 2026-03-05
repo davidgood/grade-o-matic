@@ -50,11 +50,11 @@
 
         <div class="flex gap-2">
             <button type="submit"
-                    class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
+                    class="btn-primary">
                 {% if assignment %}Update Assignment{% else %}Save Asssignment{% endif %}
             </button>
             <a href="{% if class %}/ui/instructors/classes/{{ class.id }}{% else %}/ui/instructors{% endif %}"
-               class="rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100">
+               class="btn-secondary">
                 Cancel
             </a>
         </div>

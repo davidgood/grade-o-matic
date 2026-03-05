@@ -15,7 +15,7 @@
     {% endif %}
 
     <form method="post" action="{{ form_action }}" class="space-y-3">
-        <input type="hidden" name="authenticity_token" value="{{ authenticity_token|safe }}" />
+        <input type="hidden" name="authenticity_token" value="{{ authenticity_token|safe }}"/>
         <div class="space-y-2">
             <label for="title" class="text-sm font-medium text-slate-700">Title</label>
             <input id="title" name="title" type="text"
@@ -36,7 +36,7 @@
 
         <div class="flex gap-2">
             <button type="submit"
-                    class="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700">
+                    class="btn-primary">
                 {% if class %}Update Class{% else %}Save Class{% endif %}
             </button>
             <a href="{% if class %}/ui/instructors/classes/{{ class.id }}{% else %}/ui/instructors{% endif %}"

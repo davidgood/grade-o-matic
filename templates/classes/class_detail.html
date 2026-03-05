@@ -32,7 +32,7 @@
             </select>
         </div>
         <button type="submit"
-                class="inline-flex items-center self-end rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+                class="btn-primary"
                 style="align-self: flex-end;">
             Add to Roster
         </button>
@@ -41,8 +41,8 @@
     {% if roster_members|length == 0 %}
     <p class="text-slate-600 text-sm">No students are currently enrolled.</p>
     {% else %}
-    <div class="overflow-hidden rounded-lg border border-slate-200">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <div class="table-frame rounded-lg border border-slate-200">
+        <table class="min-w-full table-wide divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50">
             <tr>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Name</th>
@@ -82,8 +82,8 @@
     {% if assignments|length == 0 %}
     <p class="text-slate-600 text-sm">No assignments in this classroom yet.</p>
     {% else %}
-    <div class="overflow-hidden rounded-lg border border-slate-200">
-        <table class="min-w-full divide-y divide-slate-250 text-sm">
+    <div class="table-frame rounded-lg border border-slate-200">
+        <table class="min-w-full table-wide divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50">
             <tr>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Title</th>
@@ -106,8 +106,8 @@
                     -
                     {% endif %}
                 </td>
-                <td> {{ assignment.points }}</td>
-                <td> {{ assignment.attachment_count }}</td>
+                <td class="px-4 py-2 text-center text-slate-700">{{ assignment.points }}</td>
+                <td class="px-4 py-2 text-center text-slate-700">{{ assignment.attachment_count }}</td>
                 <td class="px-4 py-2 text-slate-700">
                     <a
                             class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"

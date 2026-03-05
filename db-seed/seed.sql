@@ -36,6 +36,8 @@ VALUES ('00000000-0000-0000-0000-000000000001', 'admin01', 'admin01@example.com'
 --   client_secret: test_password
 --   client_id: instructor01
 --   client_secret: test_password
+--   client_id: student01
+--   client_secret: test_password
 INSERT INTO user_auth (user_id, password_hash, created_at, modified_at)
 VALUES ('00000000-0000-0000-0000-000000000001',
         '$argon2id$v=19$m=19456,t=2,p=1$XBFwBY52C9SpzkxON1OTLg$djDqZQvzxFKc9HOCWyZfKy+RlFTs0BJFSkcw/Tos14c',
@@ -46,6 +48,10 @@ VALUES ('00000000-0000-0000-0000-000000000001',
         NOW(),
         NOW()),
        ('00000000-0000-0000-0000-000000000021',
+        '$argon2id$v=19$m=19456,t=2,p=1$XBFwBY52C9SpzkxON1OTLg$djDqZQvzxFKc9HOCWyZfKy+RlFTs0BJFSkcw/Tos14c',
+        NOW(),
+        NOW()),
+       ('00000000-0000-0000-0000-000000000004',
         '$argon2id$v=19$m=19456,t=2,p=1$XBFwBY52C9SpzkxON1OTLg$djDqZQvzxFKc9HOCWyZfKy+RlFTs0BJFSkcw/Tos14c',
         NOW(),
         NOW());

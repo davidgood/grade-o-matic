@@ -18,9 +18,9 @@
             defer
     ></script>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-900" hx-boost="true">
+<body class="min-h-screen bg-slate-50 text-slate-900 app-shell">
 <header class="site-nav-wrap">
-    <div class="site-nav-inner">
+    <div class="site-nav-inner app-container">
         <a href="/" class="site-brand">Grade-O-Matic</a>
         <nav class="site-nav-menu">
             <a href="/" class="site-nav-link">Home</a>
@@ -72,8 +72,8 @@
                 <div class="site-nav-panel" x-show="open" x-transition @click.outside="open = false">
                     <a href="/ui/admin/users" class="site-nav-panel-item">User Accounts</a>
                     {% if current_user is defined and current_user.role == "admin" %}
-                    <a href="/docs" class="site-nav-panel-item">API Docs</a>
-                    <a href="/health" class="site-nav-panel-item">Health</a>
+                    <a href="/docs" class="site-nav-panel-item" hx-boost="false">API Docs</a>
+                    <a href="/health" class="site-nav-panel-item" hx-boost="false">Health</a>
                     {% endif %}
                 </div>
             </div>
@@ -82,7 +82,7 @@
         </nav>
     </div>
 </header>
-<main class="mx-auto max-w-4xl space-y-6 px-4 py-8">
+<main class="app-container space-y-6 py-8">
     {% block content %}{% endblock %}
 </main>
 </body>
