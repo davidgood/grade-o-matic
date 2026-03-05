@@ -8,6 +8,7 @@ use axum::{
         header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, LOCATION, SET_COOKIE},
     },
 };
+use chrono::Utc;
 use grade_o_matic::{
     common::error::AppError,
     common::jwt::{self, AuthBody, AuthPayload},
@@ -18,7 +19,7 @@ use grade_o_matic::{
     domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
     domains::class_memberships::{
-        ClassMembershipServiceTrait,
+        ClassMembershipRole, ClassMembershipServiceTrait,
         dto::class_membership_dto::{
             ClassMembershipDto, CreateClassMembershipDto, UpdateClassMembershipDto,
         },
@@ -36,6 +37,14 @@ use std::env;
 use std::sync::Arc;
 use tower::ServiceExt;
 use uuid::Uuid;
+
+fn enrolled_class_id() -> Uuid {
+    Uuid::parse_str("11111111-1111-1111-1111-111111111111").expect("valid uuid")
+}
+
+fn other_class_id() -> Uuid {
+    Uuid::parse_str("22222222-2222-2222-2222-222222222222").expect("valid uuid")
+}
 
 #[derive(Clone)]
 struct TestState {
@@ -173,6 +182,28 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     }
 
     async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
+        if _class_id == enrolled_class_id() {
+            return Ok(vec![AssignmentDto {
+                id: Uuid::parse_str("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").expect("valid uuid"),
+                class_id: enrolled_class_id(),
+                title: "Homework 1".to_string(),
+                description: Some("Ownership and borrowing".to_string()),
+                due_at: None,
+                points: Some(100),
+            }]);
+        }
+
+        if _class_id == other_class_id() {
+            return Ok(vec![AssignmentDto {
+                id: Uuid::parse_str("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb").expect("valid uuid"),
+                class_id: other_class_id(),
+                title: "Hidden Homework".to_string(),
+                description: Some("Should never be visible to this student".to_string()),
+                due_at: None,
+                points: Some(50),
+            }]);
+        }
+
         Ok(vec![])
     }
 
@@ -291,6 +322,28 @@ impl ClassServiceTrait for FakeClassService {
     }
 
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassDto>, AppError> {
+        if _id == enrolled_class_id() {
+            return Ok(Some(ClassDto {
+                id: enrolled_class_id(),
+                title: "Intro to Rust".to_string(),
+                description: Some("Foundations of Rust programming".to_string()),
+                term: Some("Spring 2026".to_string()),
+                owner_id: Some(Uuid::new_v4()),
+                created_at: Some(Utc::now()),
+            }));
+        }
+
+        if _id == other_class_id() {
+            return Ok(Some(ClassDto {
+                id: other_class_id(),
+                title: "Distributed Systems".to_string(),
+                description: Some("Hidden class".to_string()),
+                term: Some("Fall 2026".to_string()),
+                owner_id: Some(Uuid::new_v4()),
+                created_at: Some(Utc::now()),
+            }));
+        }
+
         Ok(None)
     }
 
@@ -327,7 +380,14 @@ impl ClassMembershipServiceTrait for FakeClassMembershipService {
     }
 
     async fn list_by_user_id(&self, _user_id: Uuid) -> Result<Vec<ClassMembershipDto>, AppError> {
-        Ok(vec![])
+        Ok(vec![ClassMembershipDto {
+            id: Uuid::parse_str("cccccccc-cccc-cccc-cccc-cccccccccccc").expect("valid uuid"),
+            class_id: enrolled_class_id(),
+            user_id: _user_id,
+            role: ClassMembershipRole::Student,
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+        }])
     }
 
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassMembershipDto>, AppError> {
@@ -448,6 +508,25 @@ async fn ui_assignments_allows_authenticated_user_role() {
     ensure_jwt_env();
     let app = create_test_router();
 
+    let token = jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/assignments")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn ui_assignments_forbidden_for_student_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
     let token =
         jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Student).expect("token should be created");
 
@@ -459,7 +538,96 @@ async fn ui_assignments_allows_authenticated_user_role() {
         .expect("request should build");
 
     let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn students_classes_allows_student_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token =
+        jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Student).expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/students/classes")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app
+        .clone()
+        .oneshot(req)
+        .await
+        .expect("response should return");
     assert_eq!(response.status(), StatusCode::OK);
+
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Intro to Rust"));
+    assert!(!html.contains("Distributed Systems"));
+}
+
+#[tokio::test]
+async fn students_classes_forbidden_for_instructor_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/students/classes")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn students_assignments_forbidden_for_admin_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token =
+        jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Admin).expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/students/assignments")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn students_assignments_allows_student_role_and_scopes_results() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token =
+        jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Student).expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/students/assignments")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Homework 1"));
+    assert!(html.contains("Intro to Rust"));
+    assert!(!html.contains("Hidden Homework"));
 }
 
 #[tokio::test]
