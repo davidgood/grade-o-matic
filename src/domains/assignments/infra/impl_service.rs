@@ -45,7 +45,7 @@ where
                 Ok(assignment_dtos)
             }
             Err(err) => {
-                tracing::error!("Error fetching users: {err}");
+                tracing::error!("Error fetching assignments: {err}");
                 Err(AppError::DatabaseError(err))
             }
         }

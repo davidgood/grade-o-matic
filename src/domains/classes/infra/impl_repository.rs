@@ -1,4 +1,4 @@
-use crate::domains::classes::domain::model::Class;
+use crate::domains::classes::domain::model::{Class, ClassesWithAssignments};
 use crate::domains::classes::domain::repository::ClassRepositoryTrait;
 use crate::domains::classes::dto::class_dto::{CreateClassDto, UpdateClassDto};
 use async_trait::async_trait;
@@ -24,6 +24,22 @@ SELECT
     FROM classes c
     WHERE c.id = $1"#;
 
+pub const LIST_CLASSES_WITH_ASSIGNMENTS: &str = r#"
+    SELECT c.id as class_id,
+           c.title as class_title,
+           c.term as class_term,
+           a.id as assignment_id,
+           a.title as assignment_title,
+           a.description as assignment_description,
+           a.due_at,
+           a.points
+    FROM classes c
+    LEFT JOIN assignments a on c.id = a.class_id
+    WHERE c.owner_id = $1
+    ORDER BY c.title ASC, a.due_at DESC NULLS LAST, a.title ASC
+    LIMIT 1000;
+"#;
+
 #[async_trait]
 impl ClassRepositoryTrait for ClassRepository {
     fn new(pool: PgPool) -> Self {
@@ -32,6 +48,17 @@ impl ClassRepositoryTrait for ClassRepository {
 
     async fn list(&self) -> Result<Vec<Class>, Error> {
         let classes = sqlx::query_as::<_, Class>("SELECT * FROM classes")
+            .fetch_all(&self.pool)
+            .await?;
+        Ok(classes)
+    }
+
+    async fn list_classes_with_assignments(
+        &self,
+        owner_id: Uuid,
+    ) -> Result<Vec<ClassesWithAssignments>, Error> {
+        let classes = sqlx::query_as::<_, ClassesWithAssignments>(LIST_CLASSES_WITH_ASSIGNMENTS)
+            .bind(owner_id)
             .fetch_all(&self.pool)
             .await?;
         Ok(classes)

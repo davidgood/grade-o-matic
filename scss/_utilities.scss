@@ -13,6 +13,10 @@
   max-width: 56rem;
 }
 
+.max-w-6xl {
+  max-width: 72rem;
+}
+
 .overflow-hidden {
   overflow: hidden;
 }
@@ -163,6 +167,10 @@
   background: $slate-100;
 }
 
+.bg-slate-500 {
+  background: $slate-500;
+}
+
 .bg-slate-900 {
   background: $slate-900;
 }
@@ -193,6 +201,10 @@
 
 .text-center {
   text-align: center;
+}
+
+.text-right {
+  text-align: right;
 }
 
 .text-xs {
@@ -242,6 +254,10 @@
 
 .min-w-full {
   min-width: 100%;
+}
+
+.min-w-72 {
+  min-width: 18rem;
 }
 
 .hover\:bg-slate-700:hover {

@@ -5,7 +5,7 @@ use chrono::Utc;
 use grade_o_matic::{
     common::error::AppError,
     domains::classes::{
-        Class, ClassRepositoryTrait, ClassService, ClassServiceTrait,
+        Class, ClassRepositoryTrait, ClassService, ClassServiceTrait, ClassesWithAssignments,
         dto::class_dto::{CreateClassDto, UpdateClassDto},
     },
 };
@@ -34,6 +34,13 @@ impl ClassRepositoryTrait for FakeClassRepository {
         }
         let store = self.store.lock().await;
         Ok(store.values().cloned().collect())
+    }
+
+    async fn list_classes_with_assignments(
+        &self,
+        _owner_id: Uuid,
+    ) -> Result<Vec<ClassesWithAssignments>, sqlx::Error> {
+        Ok(vec![])
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Class>, sqlx::Error> {

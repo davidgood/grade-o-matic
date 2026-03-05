@@ -9,7 +9,10 @@ use grade_o_matic::common::dto::RestApiResponse;
 use grade_o_matic::common::error::AppError;
 use grade_o_matic::common::jwt::Claims;
 use grade_o_matic::domains::classes::dto::class_dto::{CreateClassDto, UpdateClassDto};
-use grade_o_matic::domains::classes::{ClassServiceTrait, class_routes, dto::class_dto::ClassDto};
+use grade_o_matic::domains::classes::{
+    ClassServiceTrait, class_routes, dto::class_dto::ClassDto,
+    dto::class_dto::ClassesWithAssignmentsDto,
+};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -69,6 +72,13 @@ impl ClassServiceTrait for FakeClassService {
     async fn list(&self) -> Result<Vec<ClassDto>, AppError> {
         let store = self.store.lock().await;
         Ok(store.classes.values().cloned().collect())
+    }
+
+    async fn list_classes_with_assignments(
+        &self,
+        _owner_id: Uuid,
+    ) -> Result<Vec<ClassesWithAssignmentsDto>, AppError> {
+        Ok(vec![])
     }
 
     async fn find_by_id(&self, id: Uuid) -> Result<Option<ClassDto>, AppError> {

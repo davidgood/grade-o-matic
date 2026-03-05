@@ -4,7 +4,7 @@ use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
 use validator::Validate;
 
-use crate::domains::classes::domain::model::Class;
+use crate::domains::classes::domain::model::{Class, ClassesWithAssignments};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
 #[dto(from = Class)]
@@ -37,4 +37,18 @@ pub struct UpdateClassDto {
     pub term: Option<String>,
     pub owner_id: Option<uuid::Uuid>,
     pub modified_by: uuid::Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
+#[dto(from = ClassesWithAssignments)]
+pub struct ClassesWithAssignmentsDto {
+    pub class_id: uuid::Uuid,
+    pub class_title: String,
+    pub class_term: Option<String>,
+    pub assignment_id: Option<uuid::Uuid>,
+    pub assignment_title: Option<String>,
+    pub assignment_description: Option<String>,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub due_at: Option<DateTime<Utc>>,
+    pub points: Option<i16>,
 }

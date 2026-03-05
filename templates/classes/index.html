@@ -1,13 +1,15 @@
 {% extends "layouts/base.html" %}
 {% block content %}
 <header class="space-y-2">
-    <h1 class="text-3xl font-bold tracking-tight">Instructor Dashboard</h1>
+    <h1 class="text-3xl font-bold tracking-tight">Classes</h1>
     <p class="text-slate-600">Your classes.</p>
+    <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100"
+       href="/">Back to Home</a>
 </header>
 <div class="mt-4 flex justify-between items-center">
     <span></span>
     <a href="/ui/instructors/classes/new"
-       class="inline-flex items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+       class="btn-primary">
         Create New Class
     </a>
 </div>
@@ -16,8 +18,8 @@
     {% if classes|length == 0 %}
     <p class="text-slate-600 text-sm">No classes found for your account.</p>
     {% else %}
-    <div class="overflow-hidden rounded-lg border border-slate-200">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
+    <div class="table-frame rounded-lg border border-slate-200">
+        <table class="min-w-full table-wide divide-y divide-slate-200 text-sm">
             <thead class="bg-slate-50">
             <tr>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Class</th>

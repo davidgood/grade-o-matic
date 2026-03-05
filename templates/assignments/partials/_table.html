@@ -1,0 +1,30 @@
+<div class="space-y-3">
+    <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold">Assignment List</h3>
+        <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ count }} items</span>
+    </div>
+
+    <div class="table-frame rounded-lg border border-slate-200">
+        <table class="min-w-full table-wide divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50">
+            <tr>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Class</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Title</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Description</th>
+                <th class="px-4 py-2 text-left font-medium text-slate-600">Due Date</th>
+                <th class="px-4 py-2 text-center font-medium text-slate-600">Points</th>
+                <th class="px-4 py-2 text-center font-medium text-slate-600">Actions</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+            {% for assignment in assignments %}
+            {% include "assignments/partials/_row.html" %}
+            {% else %}
+            <tr>
+                <td colspan="6" class="px-4 py-8 text-center text-slate-500">No assignments found.</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

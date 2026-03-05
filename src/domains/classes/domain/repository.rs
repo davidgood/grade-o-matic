@@ -1,4 +1,4 @@
-use crate::domains::classes::domain::model::Class;
+use crate::domains::classes::domain::model::{Class, ClassesWithAssignments};
 use crate::domains::classes::dto::class_dto::{CreateClassDto, UpdateClassDto};
 use async_trait::async_trait;
 use sqlx::PgPool;
@@ -10,6 +10,11 @@ pub trait ClassRepositoryTrait: Send + Sync {
         Self: Sized;
 
     async fn list(&self) -> Result<Vec<Class>, sqlx::Error>;
+
+    async fn list_classes_with_assignments(
+        &self,
+        owner_id: uuid::Uuid,
+    ) -> Result<Vec<ClassesWithAssignments>, sqlx::Error>;
 
     async fn find_by_id(&self, id: uuid::Uuid) -> Result<Option<Class>, sqlx::Error>;
 

@@ -31,10 +31,7 @@
 <section
         id="assignments-table"
         class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-        hx-get="/ui/fragments/assignments/table"
-        hx-trigger="load"
-        hx-swap="innerHTML"
 >
-    Loading assignments...
+    {% include "assignments/partials/_table.html" %}
 </section>
 {% endblock %}
