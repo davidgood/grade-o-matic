@@ -1,3 +1,3 @@
 -- Add migration script here
-ALTER TABLE classes
+ALTER TABLE assignments
     ADD COLUMN points SMALLINT;

@@ -48,6 +48,7 @@ impl FakeAssignmentService {
             title: "Seed Assignment".to_string(),
             description: Some("This is a seed assignment for testing purposes.".to_string()),
             due_at: Some(Utc::now()),
+            points: Some(100),
         };
 
         let mut assignments = HashMap::new();
@@ -93,6 +94,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                points: assignment.points,
                 attachment_count: 0,
             })
             .collect())
@@ -135,6 +137,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
+            points: None,
         };
 
         let mut store = self.store.lock().await;
@@ -218,6 +221,7 @@ async fn create_assignment(app: &Router) -> (CreateAssignmentDto, AssignmentDto)
         title: "Test Assignment".to_string(),
         description: None,
         due_at: Some(Utc::now()),
+        points: Some(100),
         modified_by: TEST_USER_ID,
     };
 
@@ -290,6 +294,7 @@ async fn test_update_assignment() {
         title: "Updated Title".to_string(),
         description: Some("Updated Description".to_string()),
         due_at: Some(Utc::now()),
+        points: Some(100),
         modified_by: Default::default(),
     };
 

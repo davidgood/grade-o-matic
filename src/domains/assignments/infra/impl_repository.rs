@@ -21,6 +21,7 @@ const FIND_ALL_ASSIGNMENTS_QUERY: &str = r#"
         a.title,
         a.description,
         a.due_at,
+        a.points,
         a.created_by,
         a.created_at,
         a.modified_by,
@@ -36,6 +37,7 @@ SELECT
     a.title,
     a.description,
     a.due_at,
+    a.points,
     a.created_by,
     a.created_at,
     a.modified_by,
@@ -50,6 +52,7 @@ SELECT
     a.title,
     a.description,
     a.due_at,
+    a.points,
     a.created_by,
     a.created_at,
     a.modified_by,
@@ -83,6 +86,7 @@ const LIST_ASSIGNMENTS_WITH_ATTACHMENT_COUNT_QUERY: &str = r#"
       a.title,
       a.description,
       a.due_at,
+      a.points,
       a.created_by,
       a.created_at,
       a.modified_by,
@@ -192,8 +196,8 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
 
         sqlx::query(
             r#"
-                INSERT INTO assignments (id, class_id, title, description, due_at, created_by, modified_by)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                INSERT INTO assignments (id, class_id, title, description, due_at, points, created_by, modified_by)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 "#,
         )
             .bind(id)
@@ -201,6 +205,7 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
             .bind(assignment.title.clone())
             .bind(assignment.description.clone())
             .bind(assignment.due_at)
+            .bind(assignment.points)
             .bind(assignment.modified_by)
             .bind(assignment.modified_by)
             .execute(&mut *tx)
@@ -229,15 +234,17 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
                     title = $2,
                     description = $3,
                     due_at = $4,
-                    modified_by = $5,
+                    points = $5,
+                    modified_by = $6,
                     modified_at = NOW()
-                WHERE id = $6
+                WHERE id = $7
                 "#,
             )
             .bind(assignment.class_id)
             .bind(assignment.title.clone())
             .bind(assignment.description.clone())
             .bind(assignment.due_at)
+            .bind(assignment.points)
             .bind(assignment.modified_by)
             .bind(id)
             .execute(&mut *tx)

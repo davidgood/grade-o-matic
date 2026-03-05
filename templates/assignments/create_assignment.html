@@ -35,6 +35,13 @@
         </div>
 
         <div class="space-y-2">
+            <label for="points" class="text-sm font-medium text-slate-700">Points</label>
+            <input id="points" name="points" type="number"
+                   value="{% if assignment %}{{ assignment.points }}{% else %}{{ points_value }}{% endif %}" required
+                   class="auth-input"/>
+        </div>
+
+        <div class="space-y-2">
             <label for="due_at" class="text-sm font-medium text-slate-700">Due Date</label>
             <input id="due_at" name="due_at" type="datetime-local"
                    value="{% if assignment %}{{ assignment.due_at|format_datetime_local }}{% else %}{{ due_at_value }}{% endif %}"

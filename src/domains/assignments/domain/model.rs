@@ -9,6 +9,7 @@ pub struct Assignment {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub points: Option<i16>,
     pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
     pub modified_by: Option<uuid::Uuid>,
@@ -41,4 +42,5 @@ pub struct AssignmentWithAttachmentCount {
     pub modified_by: Option<uuid::Uuid>,
     pub modified_at: Option<DateTime<Utc>>,
     pub attachment_count: i32,
+    pub points: Option<i16>,
 }
