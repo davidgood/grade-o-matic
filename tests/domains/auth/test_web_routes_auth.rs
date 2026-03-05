@@ -46,6 +46,46 @@ fn other_class_id() -> Uuid {
     Uuid::parse_str("22222222-2222-2222-2222-222222222222").expect("valid uuid")
 }
 
+fn instructor_owner_id() -> Uuid {
+    Uuid::parse_str("33333333-3333-3333-3333-333333333333").expect("valid uuid")
+}
+
+fn other_instructor_id() -> Uuid {
+    Uuid::parse_str("44444444-4444-4444-4444-444444444444").expect("valid uuid")
+}
+
+fn instructor_owned_class_id() -> Uuid {
+    Uuid::parse_str("55555555-5555-5555-5555-555555555555").expect("valid uuid")
+}
+
+fn instructor_unowned_class_id() -> Uuid {
+    Uuid::parse_str("66666666-6666-6666-6666-666666666666").expect("valid uuid")
+}
+
+fn instructor_assignment_id() -> Uuid {
+    Uuid::parse_str("77777777-7777-7777-7777-777777777777").expect("valid uuid")
+}
+
+fn roster_membership_id() -> Uuid {
+    Uuid::parse_str("88888888-8888-8888-8888-888888888888").expect("valid uuid")
+}
+
+fn mismatched_roster_membership_id() -> Uuid {
+    Uuid::parse_str("99999999-9999-9999-9999-999999999999").expect("valid uuid")
+}
+
+fn enrolled_student_id() -> Uuid {
+    Uuid::parse_str("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").expect("valid uuid")
+}
+
+fn available_student_id() -> Uuid {
+    Uuid::parse_str("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb").expect("valid uuid")
+}
+
+fn ta_user_id() -> Uuid {
+    Uuid::parse_str("cccccccc-cccc-cccc-cccc-cccccccccccc").expect("valid uuid")
+}
+
 #[derive(Clone)]
 struct TestState {
     auth_service: Arc<dyn AuthServiceTrait>,
@@ -137,6 +177,44 @@ impl UserServiceTrait for FakeUserService {
     }
 
     async fn get_user_by_id(&self, _id: Uuid) -> Result<UserDto, AppError> {
+        let mk_user = |id: Uuid, username: &str, email: &str, role: UserRole| UserDto {
+            id,
+            username: username.to_string(),
+            email: Some(email.to_string()),
+            created_by: None,
+            created_at: Some(Utc::now()),
+            modified_by: None,
+            modified_at: Some(Utc::now()),
+            file_id: None,
+            origin_file_name: None,
+            user_role: role,
+        };
+
+        if _id == enrolled_student_id() {
+            return Ok(mk_user(
+                enrolled_student_id(),
+                "student01",
+                "student01@example.com",
+                UserRole::Student,
+            ));
+        }
+        if _id == available_student_id() {
+            return Ok(mk_user(
+                available_student_id(),
+                "student02",
+                "student02@example.com",
+                UserRole::Student,
+            ));
+        }
+        if _id == ta_user_id() {
+            return Ok(mk_user(
+                ta_user_id(),
+                "ta01",
+                "ta01@example.com",
+                UserRole::Ta,
+            ));
+        }
+
         Err(AppError::NotFound("not implemented".into()))
     }
 
@@ -148,7 +226,44 @@ impl UserServiceTrait for FakeUserService {
     }
 
     async fn get_users(&self) -> Result<Vec<UserDto>, AppError> {
-        Ok(vec![])
+        Ok(vec![
+            UserDto {
+                id: enrolled_student_id(),
+                username: "student01".to_string(),
+                email: Some("student01@example.com".to_string()),
+                created_by: None,
+                created_at: Some(Utc::now()),
+                modified_by: None,
+                modified_at: Some(Utc::now()),
+                file_id: None,
+                origin_file_name: None,
+                user_role: UserRole::Student,
+            },
+            UserDto {
+                id: available_student_id(),
+                username: "student02".to_string(),
+                email: Some("student02@example.com".to_string()),
+                created_by: None,
+                created_at: Some(Utc::now()),
+                modified_by: None,
+                modified_at: Some(Utc::now()),
+                file_id: None,
+                origin_file_name: None,
+                user_role: UserRole::Student,
+            },
+            UserDto {
+                id: ta_user_id(),
+                username: "ta01".to_string(),
+                email: Some("ta01@example.com".to_string()),
+                created_by: None,
+                created_at: Some(Utc::now()),
+                modified_by: None,
+                modified_at: Some(Utc::now()),
+                file_id: None,
+                origin_file_name: None,
+                user_role: UserRole::Ta,
+            },
+        ])
     }
 
     async fn create_user(
@@ -211,6 +326,17 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         &self,
         _class_id: Uuid,
     ) -> Result<Vec<AssignmentWithAttachmentCountDto>, AppError> {
+        if _class_id == instructor_owned_class_id() {
+            return Ok(vec![AssignmentWithAttachmentCountDto {
+                id: instructor_assignment_id(),
+                class_id: instructor_owned_class_id(),
+                title: "Midterm Project".to_string(),
+                description: Some("Build a service".to_string()),
+                due_at: None,
+                points: Some(200),
+                attachment_count: 0,
+            }]);
+        }
         Ok(vec![])
     }
 
@@ -235,6 +361,16 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     }
 
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+        if _id == instructor_assignment_id() {
+            return Ok(Some(AssignmentDto {
+                id: instructor_assignment_id(),
+                class_id: instructor_owned_class_id(),
+                title: "Midterm Project".to_string(),
+                description: Some("Build a service".to_string()),
+                due_at: None,
+                points: Some(200),
+            }));
+        }
         Ok(None)
     }
 
@@ -249,7 +385,14 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         &self,
         _assignment: grade_o_matic::domains::assignments::dto::assignment_dto::UpdateAssignmentDto,
     ) -> Result<AssignmentDto, AppError> {
-        Err(AppError::InternalError)
+        Ok(AssignmentDto {
+            id: _assignment.id,
+            class_id: _assignment.class_id,
+            title: _assignment.title,
+            description: _assignment.description,
+            due_at: _assignment.due_at,
+            points: _assignment.points,
+        })
     }
 
     async fn delete(&self, _id: Uuid) -> Result<String, AppError> {
@@ -308,7 +451,24 @@ impl ClassServiceTrait for FakeClassService {
     }
 
     async fn list(&self) -> Result<Vec<ClassDto>, AppError> {
-        Ok(vec![])
+        Ok(vec![
+            ClassDto {
+                id: instructor_owned_class_id(),
+                title: "Systems Programming".to_string(),
+                description: Some("Owned by instructor".to_string()),
+                term: Some("Spring 2026".to_string()),
+                owner_id: Some(instructor_owner_id()),
+                created_at: Some(Utc::now()),
+            },
+            ClassDto {
+                id: instructor_unowned_class_id(),
+                title: "Algorithms".to_string(),
+                description: Some("Owned by a different instructor".to_string()),
+                term: Some("Spring 2026".to_string()),
+                owner_id: Some(other_instructor_id()),
+                created_at: Some(Utc::now()),
+            },
+        ])
     }
 
     async fn list_classes_with_assignments(
@@ -318,10 +478,47 @@ impl ClassServiceTrait for FakeClassService {
         Vec<grade_o_matic::domains::classes::dto::class_dto::ClassesWithAssignmentsDto>,
         AppError,
     > {
+        if _owner_id == instructor_owner_id() {
+            return Ok(vec![
+                grade_o_matic::domains::classes::dto::class_dto::ClassesWithAssignmentsDto {
+                    class_id: instructor_owned_class_id(),
+                    class_title: "Systems Programming".to_string(),
+                    class_term: Some("Spring 2026".to_string()),
+                    assignment_id: Some(instructor_assignment_id()),
+                    assignment_title: Some("Midterm Project".to_string()),
+                    assignment_description: Some("Build a service".to_string()),
+                    due_at: None,
+                    points: Some(200),
+                },
+            ]);
+        }
+
         Ok(vec![])
     }
 
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassDto>, AppError> {
+        if _id == instructor_owned_class_id() {
+            return Ok(Some(ClassDto {
+                id: instructor_owned_class_id(),
+                title: "Systems Programming".to_string(),
+                description: Some("Owned by instructor".to_string()),
+                term: Some("Spring 2026".to_string()),
+                owner_id: Some(instructor_owner_id()),
+                created_at: Some(Utc::now()),
+            }));
+        }
+
+        if _id == instructor_unowned_class_id() {
+            return Ok(Some(ClassDto {
+                id: instructor_unowned_class_id(),
+                title: "Algorithms".to_string(),
+                description: Some("Owned by a different instructor".to_string()),
+                term: Some("Spring 2026".to_string()),
+                owner_id: Some(other_instructor_id()),
+                created_at: Some(Utc::now()),
+            }));
+        }
+
         if _id == enrolled_class_id() {
             return Ok(Some(ClassDto {
                 id: enrolled_class_id(),
@@ -351,13 +548,30 @@ impl ClassServiceTrait for FakeClassService {
         &self,
         _class: grade_o_matic::domains::classes::dto::class_dto::CreateClassDto,
     ) -> Result<ClassDto, AppError> {
-        Err(AppError::InternalError)
+        Ok(ClassDto {
+            id: Uuid::parse_str("12121212-1212-1212-1212-121212121212").expect("valid uuid"),
+            title: _class.title,
+            description: _class.description,
+            term: _class.term,
+            owner_id: _class.owner_id.or(Some(_class.modified_by)),
+            created_at: Some(Utc::now()),
+        })
     }
 
     async fn update(
         &self,
         _class: grade_o_matic::domains::classes::dto::class_dto::UpdateClassDto,
     ) -> Result<Option<ClassDto>, AppError> {
+        if _class.id == instructor_owned_class_id() {
+            return Ok(Some(ClassDto {
+                id: _class.id,
+                title: _class.title,
+                description: _class.description,
+                term: _class.term,
+                owner_id: _class.owner_id,
+                created_at: Some(Utc::now()),
+            }));
+        }
         Ok(None)
     }
 
@@ -376,6 +590,16 @@ impl ClassMembershipServiceTrait for FakeClassMembershipService {
     }
 
     async fn list_by_class_id(&self, _class_id: Uuid) -> Result<Vec<ClassMembershipDto>, AppError> {
+        if _class_id == instructor_owned_class_id() {
+            return Ok(vec![ClassMembershipDto {
+                id: roster_membership_id(),
+                class_id: instructor_owned_class_id(),
+                user_id: enrolled_student_id(),
+                role: ClassMembershipRole::Student,
+                created_at: Some(Utc::now()),
+                modified_at: Some(Utc::now()),
+            }]);
+        }
         Ok(vec![])
     }
 
@@ -391,6 +615,26 @@ impl ClassMembershipServiceTrait for FakeClassMembershipService {
     }
 
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<ClassMembershipDto>, AppError> {
+        if _id == roster_membership_id() {
+            return Ok(Some(ClassMembershipDto {
+                id: roster_membership_id(),
+                class_id: instructor_owned_class_id(),
+                user_id: enrolled_student_id(),
+                role: ClassMembershipRole::Student,
+                created_at: Some(Utc::now()),
+                modified_at: Some(Utc::now()),
+            }));
+        }
+        if _id == mismatched_roster_membership_id() {
+            return Ok(Some(ClassMembershipDto {
+                id: mismatched_roster_membership_id(),
+                class_id: instructor_unowned_class_id(),
+                user_id: enrolled_student_id(),
+                role: ClassMembershipRole::Student,
+                created_at: Some(Utc::now()),
+                modified_at: Some(Utc::now()),
+            }));
+        }
         Ok(None)
     }
 
@@ -398,7 +642,14 @@ impl ClassMembershipServiceTrait for FakeClassMembershipService {
         &self,
         _membership: CreateClassMembershipDto,
     ) -> Result<ClassMembershipDto, AppError> {
-        Err(AppError::InternalError)
+        Ok(ClassMembershipDto {
+            id: Uuid::parse_str("13131313-1313-1313-1313-131313131313").expect("valid uuid"),
+            class_id: _membership.class_id,
+            user_id: _membership.user_id,
+            role: _membership.role,
+            created_at: Some(Utc::now()),
+            modified_at: Some(Utc::now()),
+        })
     }
 
     async fn update(
@@ -409,7 +660,7 @@ impl ClassMembershipServiceTrait for FakeClassMembershipService {
     }
 
     async fn delete(&self, _id: Uuid) -> Result<String, AppError> {
-        Ok("ok".to_string())
+        Ok("Class membership deleted".to_string())
     }
 }
 
@@ -447,6 +698,26 @@ async fn body_to_string(body: Body) -> String {
         .expect("body should collect")
         .to_bytes();
     String::from_utf8(bytes.to_vec()).expect("body should be valid utf-8")
+}
+
+async fn get_csrf_cookie_and_token(app: &Router) -> (String, String) {
+    let get_req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/login")
+        .body(Body::empty())
+        .expect("request should build");
+    let get_response = app
+        .clone()
+        .oneshot(get_req)
+        .await
+        .expect("response should return");
+
+    let csrf_cookie =
+        extract_csrf_cookie(get_response.headers()).expect("csrf cookie should exist");
+    let html = body_to_string(get_response.into_body()).await;
+    let authenticity_token =
+        extract_hidden_authenticity_token(&html).expect("token should exist in form");
+    (csrf_cookie, authenticity_token)
 }
 
 fn extract_csrf_cookie(headers: &axum::http::HeaderMap) -> Option<String> {
@@ -628,6 +899,333 @@ async fn students_assignments_allows_student_role_and_scopes_results() {
     assert!(html.contains("Homework 1"));
     assert!(html.contains("Intro to Rust"));
     assert!(!html.contains("Hidden Homework"));
+}
+
+#[tokio::test]
+async fn instructors_classes_allows_instructor_and_scopes_to_owned_classes() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/instructors/classes")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Systems Programming"));
+    assert!(!html.contains("Algorithms"));
+}
+
+#[tokio::test]
+async fn instructor_class_detail_forbidden_for_non_owner_instructor() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&other_instructor_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/instructors/classes/55555555-5555-5555-5555-555555555555")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn instructor_assignments_fragment_renders_for_instructor() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/instructors/fragments/assignments/table")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Midterm Project"));
+    assert!(html.contains("Systems Programming"));
+}
+
+#[tokio::test]
+async fn instructor_assignments_fragment_forbidden_for_student() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token =
+        jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Student).expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/instructors/fragments/assignments/table")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn create_class_page_allows_instructor_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/instructors/classes/new")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn create_class_submit_happy_path_redirects_to_class_detail() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body = format!(
+        "title=Operating%20Systems&description=Kernel%20project&term=Spring%202026&authenticity_token={encoded_token}"
+    );
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/classes/new")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    let location = response
+        .headers()
+        .get(LOCATION)
+        .and_then(|v| v.to_str().ok())
+        .expect("location should exist");
+    assert!(location.starts_with("/ui/instructors/classes/"));
+}
+
+#[tokio::test]
+async fn create_class_submit_rejects_empty_title() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body =
+        format!("title=%20%20%20&description=desc&term=Spring&authenticity_token={encoded_token}");
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/classes/new")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Title is required."));
+}
+
+#[tokio::test]
+async fn add_student_to_roster_happy_path_redirects_back_to_class() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body = format!(
+        "student_user_id={}&authenticity_token={encoded_token}",
+        available_student_id()
+    );
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/classes/55555555-5555-5555-5555-555555555555/roster")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response
+            .headers()
+            .get(LOCATION)
+            .and_then(|v| v.to_str().ok()),
+        Some("/ui/instructors/classes/55555555-5555-5555-5555-555555555555")
+    );
+}
+
+#[tokio::test]
+async fn add_student_to_roster_rejects_non_student_user() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body = format!(
+        "student_user_id={}&authenticity_token={encoded_token}",
+        ta_user_id()
+    );
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/classes/55555555-5555-5555-5555-555555555555/roster")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn remove_student_from_roster_forbidden_when_membership_class_mismatch() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body = format!("authenticity_token={encoded_token}");
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/classes/55555555-5555-5555-5555-555555555555/roster/99999999-9999-9999-9999-999999999999/delete")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn edit_assignment_page_happy_path_renders_form() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/instructors/assignments/77777777-7777-7777-7777-777777777777/edit")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Edit Assignment"));
+    assert!(html.contains("Midterm Project"));
+}
+
+#[tokio::test]
+async fn edit_assignment_submit_happy_path_redirects_to_class() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body = format!(
+        "title=Updated%20Project&description=Updated%20desc&due_at=2026-03-31T23:59&points=123&authenticity_token={encoded_token}"
+    );
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/assignments/77777777-7777-7777-7777-777777777777/edit")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response
+            .headers()
+            .get(LOCATION)
+            .and_then(|v| v.to_str().ok()),
+        Some("/ui/instructors/classes/55555555-5555-5555-5555-555555555555")
+    );
+}
+
+#[tokio::test]
+async fn edit_assignment_submit_rejects_invalid_due_date() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+    let encoded_token = url_encode(&authenticity_token);
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let body = format!(
+        "title=Updated%20Project&description=Updated%20desc&due_at=bad-date&points=123&authenticity_token={encoded_token}"
+    );
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/instructors/assignments/77777777-7777-7777-7777-777777777777/edit")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
