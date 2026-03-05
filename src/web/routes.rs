@@ -26,6 +26,7 @@ use super::{
         edit_assignment_submit, edit_class_page, edit_class_submit, instructor_class_detail_page,
         instructors_page, remove_student_from_roster, upload_assignment_attachments,
     },
+    students::{students_assignments_page, students_classes_page},
 };
 use crate::domains::user::{UserAssetPattern, UserServiceTrait};
 
@@ -84,6 +85,8 @@ where
             "/ui/instructors/assignments/{id}/attachments",
             post(upload_assignment_attachments),
         )
+        .route("/ui/students/classes", get(students_classes_page))
+        .route("/ui/students/assignments", get(students_assignments_page))
         .route("/ui/logout", get(logout))
         .layer(middleware::from_fn(jwt::require_ui_access))
         .layer(middleware::from_fn(jwt::jwt_auth_web));
