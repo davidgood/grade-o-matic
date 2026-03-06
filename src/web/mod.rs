@@ -41,6 +41,11 @@ fn build_embedded_environment() -> Environment<'static> {
     )
     .expect("Failed to register assignments/student_index.html");
     env.add_template(
+        "assignments/student_detail.html",
+        include_str!("../../templates/assignments/student_detail.html"),
+    )
+    .expect("Failed to register assignments/student_detail.html");
+    env.add_template(
         "assignments/detail.html",
         include_str!("../../templates/assignments/detail.html"),
     )

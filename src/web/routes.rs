@@ -26,7 +26,10 @@ use super::{
         edit_assignment_submit, edit_class_page, edit_class_submit, instructor_class_detail_page,
         instructors_page, remove_student_from_roster, upload_assignment_attachments,
     },
-    students::{students_assignments_page, students_classes_page},
+    students::{
+        student_assignment_detail_page, students_assignments_page, students_classes_page,
+        submit_student_assignment,
+    },
 };
 use crate::domains::user::{UserAssetPattern, UserServiceTrait};
 
@@ -96,6 +99,14 @@ where
     let student_ui_routes = Router::new()
         .route("/ui/students/classes", get(students_classes_page))
         .route("/ui/students/assignments", get(students_assignments_page))
+        .route(
+            "/ui/students/assignments/{id}",
+            get(student_assignment_detail_page),
+        )
+        .route(
+            "/ui/students/assignments/{id}/submit",
+            post(submit_student_assignment),
+        )
         .layer(middleware::from_fn(jwt::require_student_ui_access))
         .layer(middleware::from_fn(jwt::jwt_auth_web));
 

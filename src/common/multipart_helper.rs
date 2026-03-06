@@ -43,6 +43,11 @@ async fn parse_multipart_internal(
 
         if let Some(filename) = field.file_name() {
             let original_filename = filename.to_string();
+            if original_filename.trim().is_empty() {
+                // Browsers include an empty file part when no file is selected.
+                // Treat it as "no upload" instead of failing extension validation.
+                continue;
+            }
             if original_filename.contains("..") || original_filename.contains("/") {
                 tracing::error!("Invalid file name: {}", original_filename);
                 return Err(AppError::InvalidFileName);

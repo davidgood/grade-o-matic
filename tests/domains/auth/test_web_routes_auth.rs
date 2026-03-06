@@ -86,6 +86,10 @@ fn ta_user_id() -> Uuid {
     Uuid::parse_str("cccccccc-cccc-cccc-cccc-cccccccccccc").expect("valid uuid")
 }
 
+fn student_assignment_id() -> Uuid {
+    Uuid::parse_str("dddddddd-dddd-dddd-dddd-dddddddddddd").expect("valid uuid")
+}
+
 #[derive(Clone)]
 struct TestState {
     auth_service: Arc<dyn AuthServiceTrait>,
@@ -299,7 +303,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
         if _class_id == enrolled_class_id() {
             return Ok(vec![AssignmentDto {
-                id: Uuid::parse_str("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa").expect("valid uuid"),
+                id: student_assignment_id(),
                 class_id: enrolled_class_id(),
                 title: "Homework 1".to_string(),
                 description: Some("Ownership and borrowing".to_string()),
@@ -344,6 +348,20 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         &self,
         _assignment_id: Uuid,
     ) -> Result<Vec<AssignmentAttachment>, AppError> {
+        if _assignment_id == student_assignment_id() {
+            return Ok(vec![AssignmentAttachment {
+                assignment_id: student_assignment_id(),
+                file_id: Uuid::parse_str("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+                    .expect("valid uuid"),
+                file_name: "submission.pdf".to_string(),
+                origin_file_name: "submission.pdf".to_string(),
+                file_url: "/file/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee".to_string(),
+                content_type: "application/pdf".to_string(),
+                file_size: 1024,
+                created_by: Some(enrolled_student_id()),
+                created_at: Utc::now(),
+            }]);
+        }
         Ok(vec![])
     }
 
@@ -361,6 +379,16 @@ impl AssignmentServiceTrait for FakeAssignmentService {
     }
 
     async fn find_by_id(&self, _id: Uuid) -> Result<Option<AssignmentDto>, AppError> {
+        if _id == student_assignment_id() {
+            return Ok(Some(AssignmentDto {
+                id: student_assignment_id(),
+                class_id: enrolled_class_id(),
+                title: "Homework 1".to_string(),
+                description: Some("Ownership and borrowing".to_string()),
+                due_at: None,
+                points: Some(100),
+            }));
+        }
         if _id == instructor_assignment_id() {
             return Ok(Some(AssignmentDto {
                 id: instructor_assignment_id(),
@@ -425,7 +453,23 @@ impl FileServiceTrait for FakeFileService {
         &self,
         _upload_file_dto: &UploadFileDto,
     ) -> Result<grade_o_matic::domains::file::dto::file_dto::UploadedFileDto, AppError> {
-        Err(AppError::InternalError)
+        Ok(
+            grade_o_matic::domains::file::dto::file_dto::UploadedFileDto {
+                id: Uuid::parse_str("ffffffff-ffff-ffff-ffff-ffffffffffff").expect("valid uuid"),
+                user_id: _upload_file_dto.user_id.expect("user id should exist"),
+                file_name: _upload_file_dto.file.original_filename.clone(),
+                origin_file_name: _upload_file_dto.file.original_filename.clone(),
+                file_relative_path: "document/test/submission.txt".to_string(),
+                file_url: "/file/ffffffff-ffff-ffff-ffff-ffffffffffff".to_string(),
+                content_type: _upload_file_dto.file.content_type.clone(),
+                file_size: _upload_file_dto.file.data.len() as i64,
+                file_type: grade_o_matic::domains::file::FileType::Document,
+                created_by: Some(_upload_file_dto.modified_by),
+                created_at: Utc::now(),
+                modified_by: Some(_upload_file_dto.modified_by),
+                modified_at: Utc::now(),
+            },
+        )
     }
 
     async fn get_file_metadata(
@@ -752,6 +796,30 @@ fn url_encode(value: &str) -> String {
     out
 }
 
+fn build_multipart_form(fields: &[(&str, &str)], boundary: &str) -> String {
+    let mut body = String::new();
+    for (name, value) in fields {
+        body.push_str(&format!("--{boundary}\r\n"));
+        body.push_str(&format!(
+            "Content-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n"
+        ));
+    }
+    body.push_str(&format!("--{boundary}--\r\n"));
+    body
+}
+
+fn build_multipart_form_with_empty_attachment(fields: &[(&str, &str)], boundary: &str) -> String {
+    let mut body = build_multipart_form(fields, boundary);
+    let closing = format!("--{boundary}--\r\n");
+    body = body.trim_end_matches(&closing).to_string();
+    body.push_str(&format!("--{boundary}\r\n"));
+    body.push_str("Content-Disposition: form-data; name=\"attachments\"; filename=\"\"\r\n");
+    body.push_str("Content-Type: application/octet-stream\r\n\r\n");
+    body.push_str("\r\n");
+    body.push_str(&closing);
+    body
+}
+
 #[tokio::test]
 async fn ui_assignments_requires_authentication() {
     ensure_jwt_env();
@@ -899,6 +967,123 @@ async fn students_assignments_allows_student_role_and_scopes_results() {
     assert!(html.contains("Homework 1"));
     assert!(html.contains("Intro to Rust"));
     assert!(!html.contains("Hidden Homework"));
+}
+
+#[tokio::test]
+async fn students_assignment_detail_page_allows_student_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&enrolled_student_id(), UserRole::Student)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/students/assignments/dddddddd-dddd-dddd-dddd-dddddddddddd")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Assignment Details"));
+    assert!(html.contains("Submit Assignment"));
+}
+
+#[tokio::test]
+async fn students_assignment_detail_page_forbidden_for_instructor_role() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&Uuid::new_v4(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri("/ui/students/assignments/dddddddd-dddd-dddd-dddd-dddddddddddd")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn students_assignment_submit_with_code_redirects_back_to_detail() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+
+    let token = jwt::make_jwt_token(&enrolled_student_id(), UserRole::Student)
+        .expect("token should be created");
+
+    let boundary = "X-BOUNDARY";
+    let body = build_multipart_form(
+        &[
+            ("authenticity_token", &authenticity_token),
+            ("code_submission", "fn main() { println!(\"hello\"); }"),
+        ],
+        boundary,
+    );
+
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/students/assignments/dddddddd-dddd-dddd-dddd-dddddddddddd/submit")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(
+            CONTENT_TYPE,
+            format!("multipart/form-data; boundary={boundary}"),
+        )
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(
+        response
+            .headers()
+            .get(LOCATION)
+            .and_then(|v| v.to_str().ok()),
+        Some("/ui/students/assignments/dddddddd-dddd-dddd-dddd-dddddddddddd?submitted=1")
+    );
+}
+
+#[tokio::test]
+async fn students_assignment_submit_ignores_empty_attachment_part() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+
+    let token = jwt::make_jwt_token(&enrolled_student_id(), UserRole::Student)
+        .expect("token should be created");
+
+    let boundary = "X-BOUNDARY-EMPTY";
+    let body = build_multipart_form_with_empty_attachment(
+        &[
+            ("authenticity_token", &authenticity_token),
+            ("code_submission", "println!(\"hello\");"),
+        ],
+        boundary,
+    );
+
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/students/assignments/dddddddd-dddd-dddd-dddd-dddddddddddd/submit")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(
+            CONTENT_TYPE,
+            format!("multipart/form-data; boundary={boundary}"),
+        )
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
 }
 
 #[tokio::test]

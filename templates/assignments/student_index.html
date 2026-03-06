@@ -4,7 +4,7 @@
     <h1 class="text-3xl font-bold tracking-tight">My Assignments</h1>
     <p class="text-slate-600">Assignments for classes where you are enrolled.</p>
     <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100"
-       href="/ui/students/classes">Back to Classes</a>
+       href="/">Back to Home</a>
 </header>
 
 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -25,6 +25,7 @@
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Description</th>
                 <th class="px-4 py-2 text-left font-medium text-slate-600">Due Date</th>
                 <th class="px-4 py-2 text-center font-medium text-slate-600">Points</th>
+                <th class="px-4 py-2 text-center font-medium text-slate-600">Actions</th>
             </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 bg-white">
@@ -41,6 +42,10 @@
                     {% endif %}
                 </td>
                 <td class="px-4 py-2 text-center text-slate-700">{{ assignment.points or "-" }}</td>
+                <td class="px-4 py-2 text-center">
+                    <a href="/ui/students/assignments/{{ assignment.id }}"
+                       class="text-blue-500 hover:underline">View</a>
+                </td>
             </tr>
             {% endfor %}
             </tbody>
