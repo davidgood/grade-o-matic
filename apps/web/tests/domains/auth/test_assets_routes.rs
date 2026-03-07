@@ -10,7 +10,10 @@ use grade_o_matic_web::domains::user::UserRole;
 use tower::ServiceExt;
 use tower_http::services::ServeDir;
 
-use std::{env, fs, path::Path};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 use crate::test_helpers::TEST_USER_ID;
 
@@ -44,7 +47,11 @@ fn load_assets_test_config() -> Config {
 }
 
 fn ensure_test_assets(config: &Config) {
-    let fixture = Path::new("../../asset/cat.png");
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/asset/cat.png")
+        .canonicalize()
+        .expect("fixture path should resolve");
+    let fixture = fixture_path.as_path();
     assert!(fixture.exists(), "missing fixture tests/asset/cat.png");
 
     let public_target = Path::new(&config.assets_public_path).join("images.jpeg");

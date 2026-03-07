@@ -14,85 +14,94 @@ pub mod view_models;
 
 pub use routes::web_routes;
 
+const TEMPLATE_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/templates");
+
+macro_rules! embedded_template {
+    ($relative:literal) => {
+        include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/",
+            $relative
+        ))
+    };
+}
+
 fn build_embedded_environment() -> Environment<'static> {
     let mut env = Environment::new();
-    env.add_template(
-        "layouts/base.html",
-        include_str!("../../templates/layouts/base.html"),
-    )
-    .expect("Failed to register layouts/base.html");
-    env.add_template("index.html", include_str!("../../templates/index.html"))
+    env.add_template("layouts/base.html", embedded_template!("layouts/base.html"))
+        .expect("Failed to register layouts/base.html");
+    env.add_template("index.html", embedded_template!("index.html"))
         .expect("Failed to register index.html");
-    env.add_template("login.html", include_str!("../../templates/login.html"))
+    env.add_template("login.html", embedded_template!("login.html"))
         .expect("Failed to register login.html");
     env.add_template(
         "admin/users_new.html",
-        include_str!("../../templates/admin/users_new.html"),
+        embedded_template!("admin/users_new.html"),
     )
     .expect("Failed to register admin/users_new.html");
     env.add_template(
         "assignments/index.html",
-        include_str!("../../templates/assignments/index.html"),
+        embedded_template!("assignments/index.html"),
     )
     .expect("Failed to register assignments/index.html");
     env.add_template(
         "assignments/student_index.html",
-        include_str!("../../templates/assignments/student_index.html"),
+        embedded_template!("assignments/student_index.html"),
     )
     .expect("Failed to register assignments/student_index.html");
     env.add_template(
         "assignments/student_detail.html",
-        include_str!("../../templates/assignments/student_detail.html"),
+        embedded_template!("assignments/student_detail.html"),
     )
     .expect("Failed to register assignments/student_detail.html");
     env.add_template(
         "assignments/detail.html",
-        include_str!("../../templates/assignments/detail.html"),
+        embedded_template!("assignments/detail.html"),
     )
     .expect("Failed to register assignments/detail.html");
     env.add_template(
         "assignments/create_assignment.html",
-        include_str!("../../templates/assignments/create_assignment.html"),
+        embedded_template!("assignments/create_assignment.html"),
     )
     .expect("Failed to register assignments/create_assignment.html");
     env.add_template(
         "assignments/partials/_row.html",
-        include_str!("../../templates/assignments/partials/_row.html"),
+        embedded_template!("assignments/partials/_row.html"),
     )
     .expect("Failed to register assignments/partials/_row.html");
     env.add_template(
         "assignments/partials/_table.html",
-        include_str!("../../templates/assignments/partials/_table.html"),
+        embedded_template!("assignments/partials/_table.html"),
     )
     .expect("Failed to register assignments/partials/_table.html");
     env.add_template(
         "assignments/_status_badge.html",
-        include_str!("../../templates/assignments/_status_badge.html"),
+        embedded_template!("assignments/_status_badge.html"),
     )
     .expect("Failed to register assignments/_status_badge.html");
     env.add_template(
         "assignments/partials/_attachments_panel.html",
-        include_str!("../../templates/assignments/partials/_attachments_panel.html"),
+        embedded_template!("assignments/partials/_attachments_panel.html"),
     )
     .expect("Failed to register assignments/partials/_attachments_panel.html");
     env.add_template(
         "classes/index.html",
-        include_str!("../../templates/classes/index.html"),
+        embedded_template!("classes/index.html"),
     )
     .expect("Failed to register classes/index.html");
     env.add_template(
         "classes/class_detail.html",
-        include_str!("../../templates/classes/class_detail.html"),
+        embedded_template!("classes/class_detail.html"),
     )
     .expect("Failed to register classes/class_detail.html");
     env.add_template(
         "classes/create_class.html",
-        include_str!("../../templates/classes/create_class.html"),
+        embedded_template!("classes/create_class.html"),
     )
     .expect("Failed to register classes/create_class.html");
     env.add_template(
         "classes/student_index.html",
-        include_str!("../../templates/classes/student_index.html"),
+        embedded_template!("classes/student_index.html"),
     )
     .expect("Failed to register classes/student_index.html");
 
@@ -142,7 +151,7 @@ fn format_datetime_local(value: Value) -> String {
 
 fn build_dev_environment() -> Environment<'static> {
     let mut env = Environment::new();
-    env.set_loader(path_loader("../../templates"));
+    env.set_loader(path_loader(TEMPLATE_ROOT));
     register_filters(&mut env);
     env
 }

@@ -1,8 +1,4 @@
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-    sync::Once,
-};
+use std::{env, fs, path::PathBuf, sync::Once};
 
 use axum::{
     Router,
@@ -155,7 +151,10 @@ pub async fn create_test_router() -> Router {
 }
 
 fn ensure_test_assets(config: &Config) -> Result<(), Box<dyn std::error::Error>> {
-    let fixture = Path::new("asset/cat.png");
+    let fixture_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/asset/cat.png")
+        .canonicalize()?;
+    let fixture = fixture_path.as_path();
     if !fixture.exists() {
         return Err("Missing tests/asset/cat.png fixture".into());
     }
