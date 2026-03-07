@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: docker/Dockerfile
+      dockerfile: apps/web/docker/Dockerfile
     image: grade-o-matic:dev
     container_name: grade-o-matic-app
     restart: unless-stopped
