@@ -4,7 +4,7 @@
 .github
 
 # Rust build artifacts
-target
+apps/web/target
 
 # IDE/editor
 .idea
@@ -16,7 +16,7 @@ target
 !.env.example
 
 # Caches and temp files
-.sass-cache
+apps/web/.sass-cache
 *.log
 *.tmp
 *.swp

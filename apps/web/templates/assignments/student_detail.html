@@ -1,0 +1,166 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css"
+      integrity="sha512-uf06llspW44/LZpHzHT6qBOIVODjWtv4MxCricRxkzvopAlSWnTf6hpZTFxuuZcuNE9CBQhqE0Seu1CoRk84nQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"
+        integrity="sha512-8RnEqURPUc5aqFEN04aQEiPlSAdE0jlFS/9iGgUyNtwFnSKCXhmB6ZTNl7LnDtDWKabJIASzXrzD0K+LYexU9g=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/javascript/javascript.min.js"
+        integrity="sha512-I6CdJdruzGtvDyvdO4YsiAq+pkWf2efgd1ZUSK2FnM/u2VuRASPC7GowWQrWyjxCZn6CT89s3ddGI+be0Ak9Fg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/clike/clike.min.js"
+        integrity="sha512-l8ZIWnQ3XHPRG3MQ8+hT1OffRSTrFwrph1j1oc1Fzc9UKVGef5XN9fdO0vm3nW0PRgQ9LJgck6ciG59m69rvfg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/rust/rust.min.js"
+        integrity="sha512-g3Nhw36S0p4ZJQcky87D5M+vZbFvLrgsHWYltUy5IW0zKbvi8GlPRjJSo2CyUyQiU01Ier7u+rBABDs3BawKyQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/python/python.min.js"
+        integrity="sha512-2M0GdbU5OxkGYMhakED69bw0c1pW3Nb0PeF3+9d+SnwN1ryPx3wiDdNqK3gSM7KAU/pEV+2tFJFbMKjKAahOkQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/go/go.min.js"
+        integrity="sha512-dh8pBX6P5WZ63k5cSrF64G2QqKAHnLCjnP7vZOmz4peYWedM5lXyH/AqpUldSFBtubTK54kmwN6XAn/T2sVDVQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<header class="space-y-2">
+    <a class="inline-block rounded-md border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100"
+       href="/ui/students/assignments">Back to Assignments</a>
+    <h1 class="text-3xl font-bold tracking-tight">{{ assignment.title }}</h1>
+    <p class="text-slate-600">{{ class.title }}{% if class.term %} · {{ class.term }}{% endif %}</p>
+</header>
+
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+    <h2 class="text-xl font-semibold">Assignment Details</h2>
+    <dl class="grid gap-3 md:grid-cols-3">
+        <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Due Date</dt>
+            <dd class="text-slate-800">{% if assignment.due_at %}{{ assignment.due_at|format_date }}{% else %}-{% endif
+                %}
+            </dd>
+        </div>
+        <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Points</dt>
+            <dd class="text-slate-800">{% if assignment.points %}{{ assignment.points }}{% else %}-{% endif %}</dd>
+        </div>
+        <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Class</dt>
+            <dd class="text-slate-800">{{ class.title }}</dd>
+        </div>
+    </dl>
+    <div>
+        <h3 class="text-sm font-semibold text-slate-700 mb-1">Description</h3>
+        <p class="text-slate-700 whitespace-pre-wrap">{{ assignment.description or "No description provided." }}</p>
+    </div>
+</section>
+
+{% if submitted %}
+<section class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+    Submission received.
+</section>
+{% endif %}
+{% if error %}
+<section class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+    {{ error }}
+</section>
+{% endif %}
+
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+    <h2 class="text-xl font-semibold">Submit Work</h2>
+    <p class="text-sm text-slate-600">Paste code, attach files, or do both.</p>
+
+    <form method="post"
+          action="/ui/students/assignments/{{ assignment.id }}/submit"
+          enctype="multipart/form-data"
+          class="space-y-4">
+        <input type="hidden" name="authenticity_token" value="{{ authenticity_token }}"/>
+
+        <div>
+            <div class="mb-2 flex items-center justify-between gap-3">
+                <label for="code_submission" class="block text-sm font-medium text-slate-700">Code Submission</label>
+                <div class="flex items-center gap-2">
+                    <select id="code_language" class="auth-input py-1 text-sm">
+                        <option value="text/javascript" selected>JavaScript</option>
+                        <option value="text/x-c++src">C/C++</option>
+                        <option value="text/x-rustsrc">Rust</option>
+                        <option value="text/x-python">Python</option>
+                        <option value="text/x-go">Go</option>
+                        <option value="null">Plain Text</option>
+                    </select>
+                    <label for="code_language" class="text-xs font-medium uppercase tracking-wide text-slate-500">Language</label>
+                </div>
+            </div>
+            <textarea id="code_submission"
+                      name="code_submission"
+                      rows="10"
+                      class="auth-input font-mono text-sm"
+                      placeholder="Paste code here"></textarea>
+        </div>
+
+        <div>
+            <label for="attachments" class="block text-sm font-medium text-slate-700">Attach Files</label>
+            <input id="attachments" name="attachments" type="file" multiple class="auth-input"/>
+        </div>
+
+        <button type="submit"
+                class="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700">
+            Submit Assignment
+        </button>
+    </form>
+</section>
+
+<section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+    <h2 class="text-xl font-semibold">Your Submitted Files</h2>
+    {% if submission_files and submission_files|length > 0 %}
+    <ul class="space-y-2">
+        {% for file in submission_files %}
+        <li class="rounded-md border border-slate-200 px-3 py-2 text-sm">
+            <a class="text-blue-600 hover:underline"
+               href="/file/{{ file.file_id }}"
+               download="{{ file.origin_file_name }}">
+                {{ file.origin_file_name }}
+            </a>
+            <span class="text-slate-500">({{ file.content_type }}, {{ file.file_size }} bytes)</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-slate-600">No submission files yet.</p>
+    {% endif %}
+</section>
+<script>
+    (function () {
+        const textarea = document.getElementById("code_submission");
+        const languageSelect = document.getElementById("code_language");
+        if (!textarea || !window.CodeMirror) {
+            return;
+        }
+
+        const editor = window.CodeMirror.fromTextArea(textarea, {
+            mode: languageSelect ? languageSelect.value : "text/javascript",
+            lineNumbers: true,
+            lineWrapping: true,
+            tabSize: 4,
+            indentUnit: 4,
+            viewportMargin: Infinity
+        });
+        editor.setSize("100%", "320px");
+
+        if (languageSelect) {
+            languageSelect.addEventListener("change", function () {
+                editor.setOption("mode", languageSelect.value);
+            });
+        }
+
+        const form = textarea.closest("form");
+        if (form) {
+            form.addEventListener("submit", function () {
+                editor.save();
+            });
+        }
+    })();
+</script>
+{% endblock %}

@@ -1,53 +1,6 @@
-[package]
-name = "grade-o-matic"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-axum = { version = "0.8.8", features = ["multipart"] }
-axum_csrf = { version = "0.11.0", features = ["layer"] }
-tracing-subscriber = { version = "0.3.22", features = ["env-filter", "registry", "std", "fmt", "chrono"] }
-tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread", "net", "signal"] }
-tracing = "0.1.44"
-env_filter = "1.0.0"
-tower-http = { version = "0.6.8", features = ["cors", "trace", "fs"] }
-serde_json = "1.0.149"
-thiserror = "2.0.18"
-anyhow = "1.0.102"
-dotenvy = "0.15.7"
-sqlx = { version = "0.9.0-alpha.1", features = ["postgres", "runtime-tokio", "macros", "uuid", "chrono", "json"] }
-axum-extra = { version = "0.12.5", features = ["typed-header"] }
-serde = { version = "1.0.228", features = ["derive"] }
-uuid = { version = "1.21.0", features = ["v4", "serde"] }
-tower = { version = "0.5.3", features = ["timeout"] }
-utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "chrono"] }
-utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
-async-trait = "0.1.89"
-regex = "1.12.3"
-http-body-util = "0.1.3"
-validator = { version = "0.20.0", features = ["derive"] }
-rand = "0.10.0"
-argon2 = "0.5.3"
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
-chrono = { version = "0.4.44", features = ["serde"] }
-minijinja = { version = "2.12.0", features = ["loader"] }
-
-opentelemetry = { version = "0.31.0", optional = true }
-opentelemetry_sdk = { version = "0.31.0", optional = true }
-opentelemetry-otlp = { version = "0.31", features = [
-    "http-proto",
-], optional = true }
-opentelemetry-appender-tracing = { version = "0.31.1", optional = true }
-tracing-opentelemetry = { version = "0.32.1", optional = true }
-once_cell = "1.21.3"
-simple_dto_mapper_derive = "0.1.1"
-tokio-util = "0.7.18"
-
-[features]
-opentelemetry = [
-    "dep:opentelemetry",
-    "dep:opentelemetry_sdk",
-    "dep:opentelemetry-otlp",
-    "dep:opentelemetry-appender-tracing",
-    "dep:tracing-opentelemetry",
+[workspace]
+resolver = "3"
+members = [
+    "apps/web",
+    "apps/grader",
 ]
