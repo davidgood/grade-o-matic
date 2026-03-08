@@ -173,6 +173,31 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
         .bind(created_by)
         .execute(&self.pool)
         .await?;
+
+        // Best-effort enqueue for asynchronous grading workers.
+        // This allows older environments (without the new migration) to continue working.
+        let enqueue_result = sqlx::query(
+            r#"
+                INSERT INTO grading_jobs (assignment_id, file_id, submitted_by, status)
+                VALUES ($1, $2, $3, 'queued')
+                ON CONFLICT (assignment_id, file_id) DO NOTHING
+                "#,
+        )
+        .bind(assignment_id)
+        .bind(file_id)
+        .bind(created_by)
+        .execute(&self.pool)
+        .await;
+
+        if let Err(err) = enqueue_result {
+            if let sqlx::Error::Database(db_err) = &err
+                && db_err.code().as_deref() == Some("42P01")
+            {
+                tracing::warn!("grading_jobs table missing; skipping enqueue");
+            } else {
+                return Err(err);
+            }
+        }
         Ok(())
     }
 

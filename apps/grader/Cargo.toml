@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 libgrader = { path = "../libgrader" }
+sqlx.workspace = true
 anyhow.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+uuid.workspace = true
