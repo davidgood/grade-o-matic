@@ -923,6 +923,12 @@ dependencies = [
 [[package]]
 name = "grade-o-matic-grader"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "libgrader",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "grade-o-matic-web"
@@ -939,6 +945,7 @@ dependencies = [
  "env_filter",
  "http-body-util",
  "jsonwebtoken",
+ "libgrader",
  "minijinja",
  "once_cell",
  "opentelemetry",
@@ -1407,6 +1414,47 @@ name = "libc"
 version = "0.2.182"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
+
+[[package]]
+name = "libgrader"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "async-trait",
+ "axum",
+ "axum-extra",
+ "axum_csrf",
+ "chrono",
+ "dotenvy",
+ "env_filter",
+ "http-body-util",
+ "jsonwebtoken",
+ "minijinja",
+ "once_cell",
+ "opentelemetry",
+ "opentelemetry-appender-tracing",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
+ "rand 0.10.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "simple_dto_mapper_derive",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "utoipa",
+ "utoipa-swagger-ui",
+ "uuid",
+ "validator",
+]
 
 [[package]]
 name = "libm"
