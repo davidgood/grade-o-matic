@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let pool = setup_database(&config).await?;
 
     info!("grader service started");
-    poll::run(pool).await?;
+    poll::run(pool, config).await?;
     info!("grader service stopping");
 
     Ok(())
