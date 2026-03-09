@@ -1,8 +1,12 @@
 use std::collections::HashMap;
 
-use crate::{app::FORBIDDEN_PATTERNS, common::error::AppError, domains::file::FileDto};
+use crate::{common::error::AppError, domains::file::FileDto};
+use once_cell::sync::Lazy;
+use regex::Regex;
 
 const APPLICATION_OCTET_STREAM: &str = "application/octet-stream";
+static FORBIDDEN_PATTERNS: Lazy<Vec<Regex>> =
+    Lazy::new(|| vec![Regex::new(r"(?i)<\s*script\b[^>]*>").expect("valid regex pattern")]);
 
 /// Internal helper to parse multipart form data into maps of text values and file fields.
 ///
