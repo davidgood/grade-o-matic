@@ -10,6 +10,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     info!("grader service started");
     poll::run(pool, config).await?;
+
+    tokio::signal::ctrl_c().await?;
     info!("grader service stopping");
 
     Ok(())

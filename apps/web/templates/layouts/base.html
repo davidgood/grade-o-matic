@@ -4,7 +4,7 @@
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>{{ title }}</title>
-    <link rel="stylesheet" href="/apps/web/assetso-matic.min.css"/>
+    <link rel="stylesheet" href="/apps/web/assets/public/grade-o-matic.min.css"/>
     <script
             src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
             integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz"
@@ -25,7 +25,7 @@
         <nav class="site-nav-menu">
             <a href="/" class="site-nav-link">Home</a>
 
-            {% if current_user is defined and current_user.role == "instructor" %} %}
+            {% if current_user is defined and current_user.role == "instructor" %}
             <div class="site-nav-dropdown" x-data="{ open: false }">
                 <button
                         type="button"
