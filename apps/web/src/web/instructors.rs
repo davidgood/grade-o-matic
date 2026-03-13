@@ -53,6 +53,17 @@ where
     }
 }
 
+#[derive(Debug, serde::Serialize)]
+struct InstructorStudentSubmissionRow {
+    file_id: Uuid,
+    origin_file_name: String,
+    content_type: String,
+    file_size: i64,
+    submitted_at: DateTime<Utc>,
+    grading_status: String,
+    grading_completed_at: Option<DateTime<Utc>>,
+}
+
 pub async fn instructors_page(
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
     Extension(claims): Extension<Claims>,
@@ -502,6 +513,8 @@ pub async fn edit_assignment_page(
     Path(assignment_id): Path<Uuid>,
     State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
     State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    State(class_membership_service): State<Arc<dyn ClassMembershipServiceTrait>>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
 
     Extension(claims): Extension<Claims>,
     token: CsrfToken,
@@ -524,6 +537,23 @@ pub async fn edit_assignment_page(
         return Err(AppError::Forbidden);
     }
 
+    let memberships = class_membership_service.list_by_class_id(class.id).await?;
+    let users = user_service.get_users().await?;
+    let user_by_id: HashMap<Uuid, _> = users.iter().map(|user| (user.id, user)).collect();
+    let roster_members = memberships
+        .iter()
+        .filter(|membership| matches!(membership.role, ClassMembershipRole::Student))
+        .filter_map(|membership| {
+            user_by_id.get(&membership.user_id).map(|user| {
+                context! {
+                    user_id => user.id,
+                    username => user.username.clone(),
+                    email => user.email.clone(),
+                }
+            })
+        })
+        .collect::<Vec<_>>();
+
     let authenticity_token = token
         .authenticity_token()
         .map_err(|_| AppError::InternalError)?;
@@ -536,6 +566,7 @@ pub async fn edit_assignment_page(
             assignment => assignment,
             class => class,
             attachments => assignment_service.list_attachments(assignment_id).await?,
+            roster_members => roster_members,
             upload_message => "",
             upload_error => "",
             form_action => format!("/ui/instructors/assignments/{assignment_id}/edit"),
@@ -545,6 +576,77 @@ pub async fn edit_assignment_page(
         },
     )?;
     Ok((token, Html(html)).into_response())
+}
+
+pub async fn instructor_student_submission_history_page(
+    Path((assignment_id, student_id)): Path<(Uuid, Uuid)>,
+    State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    State(class_membership_service): State<Arc<dyn ClassMembershipServiceTrait>>,
+    State(user_service): State<Arc<dyn UserServiceTrait>>,
+    Extension(claims): Extension<Claims>,
+) -> Result<Html<String>, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    let assignment = assignment_service
+        .find_by_id(assignment_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
+
+    let class = class_service
+        .find_by_id(assignment.class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+
+    if !matches!(claims.user_role, UserRole::Admin) && class.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    let memberships = class_membership_service.list_by_class_id(class.id).await?;
+    let is_enrolled = memberships.iter().any(|membership| {
+        membership.user_id == student_id && matches!(membership.role, ClassMembershipRole::Student)
+    });
+    if !is_enrolled {
+        return Err(AppError::NotFound(
+            "Student is not enrolled in this class".into(),
+        ));
+    }
+
+    let student = user_service.get_user_by_id(student_id).await?;
+    if !matches!(student.user_role, UserRole::Student) {
+        return Err(AppError::NotFound("Student not found".into()));
+    }
+
+    let submissions = assignment_service
+        .list_student_submission_history(assignment_id, student_id)
+        .await?
+        .into_iter()
+        .map(|submission| InstructorStudentSubmissionRow {
+            file_id: submission.file_id,
+            origin_file_name: submission.origin_file_name,
+            content_type: submission.content_type,
+            file_size: submission.file_size,
+            submitted_at: submission.submitted_at,
+            grading_status: submission
+                .grading_status
+                .unwrap_or_else(|| "not_queued".to_string()),
+            grading_completed_at: submission.grading_completed_at,
+        })
+        .collect::<Vec<_>>();
+
+    let html = render_template(
+        "assignments/instructor_submission_history.html",
+        context! {
+            title => format!("Submission History: {}", assignment.title),
+            class => class,
+            assignment => assignment,
+            student => student,
+            submissions => submissions,
+        },
+    )?;
+    Ok(Html(html))
 }
 
 pub async fn edit_assignment_submit(

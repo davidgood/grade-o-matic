@@ -6,7 +6,8 @@ use grade_o_matic_web::{
     common::error::AppError,
     domains::assignments::{
         Assignment, AssignmentAttachment, AssignmentRepositoryTrait, AssignmentService,
-        AssignmentServiceTrait, AssignmentWithAttachmentCount, create_assignment_service,
+        AssignmentServiceTrait, AssignmentWithAttachmentCount, StudentAssignmentSubmission,
+        create_assignment_service,
         dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto},
     },
 };
@@ -21,7 +22,9 @@ struct FakeAssignmentRepository {
     fail_find_by_class_id: bool,
     fail_find_by_class_id_with_count: bool,
     list_attachments_result: Vec<AssignmentAttachment>,
+    list_student_submission_history_result: Vec<StudentAssignmentSubmission>,
     fail_list_attachments: bool,
+    fail_list_student_submission_history: bool,
     fail_add_attachment: bool,
     fail_remove_attachment: bool,
     remove_attachment_result: bool,
@@ -106,6 +109,17 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             return Err(sqlx::Error::RowNotFound);
         }
         Ok(self.list_attachments_result.clone())
+    }
+
+    async fn list_student_submission_history(
+        &self,
+        _assignment_id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, sqlx::Error> {
+        if self.fail_list_student_submission_history {
+            return Err(sqlx::Error::RowNotFound);
+        }
+        Ok(self.list_student_submission_history_result.clone())
     }
 
     async fn add_attachment(
@@ -374,6 +388,54 @@ async fn insert_uploaded_file(pool: &PgPool, user_id: Uuid, name: &str) -> Uuid 
     id
 }
 
+async fn insert_assignment_attachment(
+    pool: &PgPool,
+    assignment_id: Uuid,
+    file_id: Uuid,
+    created_by: Uuid,
+) {
+    sqlx::query(
+        r#"
+        INSERT INTO assignment_attachments (assignment_id, file_id, created_by)
+        VALUES ($1, $2, $3)
+        "#,
+    )
+    .bind(assignment_id)
+    .bind(file_id)
+    .bind(created_by)
+    .execute(pool)
+    .await
+    .expect("insert assignment attachment");
+}
+
+async fn insert_grading_job(
+    pool: &PgPool,
+    assignment_id: Uuid,
+    file_id: Uuid,
+    submitted_by: Uuid,
+    status: &str,
+) {
+    sqlx::query(
+        r#"
+        INSERT INTO grading_jobs (assignment_id, file_id, submitted_by, status, completed_at)
+        VALUES (
+            $1,
+            $2,
+            $3,
+            $4,
+            CASE WHEN $4 = 'completed' THEN NOW() ELSE NULL END
+        )
+        "#,
+    )
+    .bind(assignment_id)
+    .bind(file_id)
+    .bind(submitted_by)
+    .bind(status)
+    .execute(pool)
+    .await
+    .expect("insert grading job");
+}
+
 #[tokio::test]
 async fn db_create_update_and_delete_assignment_happy_path() {
     let Some(pool) = maybe_setup_db().await else {
@@ -542,6 +604,68 @@ async fn db_attach_list_and_remove_file_happy_and_edge_paths() {
 }
 
 #[tokio::test]
+async fn db_list_student_submission_history_returns_student_attempts_with_status() {
+    let Some(pool) = maybe_setup_db().await else {
+        return;
+    };
+    let service = create_assignment_service(pool.clone());
+    let instructor_id =
+        insert_user(&pool, &unique_username("history_instructor"), "instructor").await;
+    let student_id = insert_user(&pool, &unique_username("history_student"), "student").await;
+    let other_student_id =
+        insert_user(&pool, &unique_username("history_other_student"), "student").await;
+    let class_id = insert_class(&pool, instructor_id, "History Class").await;
+    let assignment = service
+        .create(CreateAssignmentDto {
+            class_id,
+            title: "History Assignment".to_string(),
+            description: Some("multiple attempts".to_string()),
+            due_at: None,
+            points: Some(75),
+            modified_by: instructor_id,
+        })
+        .await
+        .expect("create assignment");
+
+    let first_file = insert_uploaded_file(&pool, student_id, "attempt-1.txt").await;
+    let second_file = insert_uploaded_file(&pool, student_id, "attempt-2.txt").await;
+    let other_student_file = insert_uploaded_file(&pool, other_student_id, "other.txt").await;
+
+    insert_assignment_attachment(&pool, assignment.id, first_file, student_id).await;
+    insert_assignment_attachment(&pool, assignment.id, second_file, student_id).await;
+    insert_assignment_attachment(&pool, assignment.id, other_student_file, other_student_id).await;
+
+    insert_grading_job(&pool, assignment.id, first_file, student_id, "failed").await;
+    insert_grading_job(&pool, assignment.id, second_file, student_id, "completed").await;
+    insert_grading_job(
+        &pool,
+        assignment.id,
+        other_student_file,
+        other_student_id,
+        "queued",
+    )
+    .await;
+
+    let rows = service
+        .list_student_submission_history(assignment.id, student_id)
+        .await
+        .expect("list submission history");
+
+    assert_eq!(rows.len(), 2);
+    assert!(rows.iter().all(|row| row.submitted_by == student_id));
+    assert!(rows.iter().any(|row| row.file_id == first_file));
+    assert!(rows.iter().any(|row| row.file_id == second_file));
+    assert!(
+        rows.iter()
+            .any(|row| row.grading_status.as_deref() == Some("completed"))
+    );
+    assert!(
+        rows.iter()
+            .any(|row| row.grading_status.as_deref() == Some("failed"))
+    );
+}
+
+#[tokio::test]
 async fn db_update_and_delete_missing_assignment_returns_not_found() {
     let Some(pool) = maybe_setup_db().await else {
         return;
@@ -626,6 +750,51 @@ async fn list_by_class_with_attachment_count_returns_database_error_when_repo_fa
         .list_by_class_with_attachment_count(Uuid::new_v4())
         .await
         .expect_err("should fail");
+    assert!(matches!(err, AppError::DatabaseError(_)));
+}
+
+#[tokio::test]
+async fn list_student_submission_history_returns_rows() {
+    let assignment_id = Uuid::new_v4();
+    let student_id = Uuid::new_v4();
+    let file_id = Uuid::new_v4();
+    let service = build_service_with_repo(FakeAssignmentRepository {
+        list_student_submission_history_result: vec![StudentAssignmentSubmission {
+            assignment_id,
+            file_id,
+            file_name: "submission-1.rs".to_string(),
+            origin_file_name: "submission-1.rs".to_string(),
+            file_url: format!("/file/{file_id}"),
+            content_type: "text/plain".to_string(),
+            file_size: 2048,
+            submitted_by: student_id,
+            submitted_at: Utc::now(),
+            grading_status: Some("completed".to_string()),
+            grading_completed_at: Some(Utc::now()),
+        }],
+        ..Default::default()
+    });
+
+    let rows = service
+        .list_student_submission_history(assignment_id, student_id)
+        .await
+        .expect("history should load");
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].file_id, file_id);
+    assert_eq!(rows[0].grading_status.as_deref(), Some("completed"));
+}
+
+#[tokio::test]
+async fn list_student_submission_history_returns_database_error_when_repo_fails() {
+    let service = build_service_with_repo(FakeAssignmentRepository {
+        fail_list_student_submission_history: true,
+        ..Default::default()
+    });
+
+    let err = service
+        .list_student_submission_history(Uuid::new_v4(), Uuid::new_v4())
+        .await
+        .expect_err("history should fail");
     assert!(matches!(err, AppError::DatabaseError(_)));
 }
 

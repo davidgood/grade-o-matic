@@ -1,5 +1,7 @@
 use crate::common::error::AppError;
-use crate::domains::assignments::domain::model::AssignmentAttachment;
+use crate::domains::assignments::domain::model::{
+    AssignmentAttachment, StudentAssignmentSubmission,
+};
 use crate::domains::assignments::dto::assignment_dto::{
     AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
@@ -26,6 +28,11 @@ pub trait AssignmentServiceTrait: Send + Sync {
         &self,
         assignment_id: uuid::Uuid,
     ) -> Result<Vec<AssignmentAttachment>, AppError>;
+    async fn list_student_submission_history(
+        &self,
+        assignment_id: uuid::Uuid,
+        student_id: uuid::Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, AppError>;
     async fn attach_file(
         &self,
         assignment_id: uuid::Uuid,

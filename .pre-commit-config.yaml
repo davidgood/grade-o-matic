@@ -29,7 +29,7 @@ repos:
     rev: v1.4.0
     hooks:
       - id: detect-secrets
-        exclude: ^apps/web/tests/|^docker-compose\.yml$|^apps/web/\.sqlx/|^\.env.example$
+        exclude: ^apps/web/tests/|^docker-compose\.yml$|^\.sqlx/|^\.env.example$
         args:
           - '--exclude-lines'
           - 'integrity\s*='

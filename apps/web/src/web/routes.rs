@@ -24,7 +24,8 @@ use super::{
     instructors::{
         add_student_to_roster, create_class_page, create_class_submit, edit_assignment_page,
         edit_assignment_submit, edit_class_page, edit_class_submit, instructor_class_detail_page,
-        instructors_page, remove_student_from_roster, upload_assignment_attachments,
+        instructor_student_submission_history_page, instructors_page, remove_student_from_roster,
+        upload_assignment_attachments,
     },
     students::{
         student_assignment_detail_page, students_assignments_page, students_classes_page,
@@ -92,6 +93,10 @@ where
         .route(
             "/ui/instructors/assignments/{id}/attachments",
             post(upload_assignment_attachments),
+        )
+        .route(
+            "/ui/instructors/assignments/{assignment_id}/students/{student_id}/submissions",
+            get(instructor_student_submission_history_page),
         )
         .layer(middleware::from_fn(jwt::require_instructor_ui_access))
         .layer(middleware::from_fn(jwt::jwt_auth_web));

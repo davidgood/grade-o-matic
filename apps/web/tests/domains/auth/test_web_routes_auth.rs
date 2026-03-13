@@ -13,7 +13,7 @@ use grade_o_matic_web::{
     common::error::AppError,
     common::jwt::{self, AuthBody, AuthPayload},
     domains::assignments::{
-        AssignmentAttachment, AssignmentServiceTrait,
+        AssignmentAttachment, AssignmentServiceTrait, StudentAssignmentSubmission,
         dto::assignment_dto::{AssignmentDto, AssignmentWithAttachmentCountDto},
     },
     domains::auth::AuthServiceTrait,
@@ -88,6 +88,10 @@ fn ta_user_id() -> Uuid {
 
 fn student_assignment_id() -> Uuid {
     Uuid::parse_str("dddddddd-dddd-dddd-dddd-dddddddddddd").expect("valid uuid")
+}
+
+fn second_submission_file_id() -> Uuid {
+    Uuid::parse_str("abababab-abab-abab-abab-abababababab").expect("valid uuid")
 }
 
 #[derive(Clone)]
@@ -362,6 +366,46 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 created_at: Utc::now(),
             }]);
         }
+        Ok(vec![])
+    }
+
+    async fn list_student_submission_history(
+        &self,
+        _assignment_id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, AppError> {
+        if _assignment_id == instructor_assignment_id() && _student_id == enrolled_student_id() {
+            return Ok(vec![
+                StudentAssignmentSubmission {
+                    assignment_id: instructor_assignment_id(),
+                    file_id: second_submission_file_id(),
+                    file_name: "submission-v2.rs".to_string(),
+                    origin_file_name: "submission-v2.rs".to_string(),
+                    file_url: format!("/file/{}", second_submission_file_id()),
+                    content_type: "text/plain".to_string(),
+                    file_size: 2048,
+                    submitted_by: enrolled_student_id(),
+                    submitted_at: Utc::now(),
+                    grading_status: Some("completed".to_string()),
+                    grading_completed_at: Some(Utc::now()),
+                },
+                StudentAssignmentSubmission {
+                    assignment_id: instructor_assignment_id(),
+                    file_id: Uuid::parse_str("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee")
+                        .expect("valid uuid"),
+                    file_name: "submission-v1.rs".to_string(),
+                    origin_file_name: "submission-v1.rs".to_string(),
+                    file_url: "/file/eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee".to_string(),
+                    content_type: "text/plain".to_string(),
+                    file_size: 1024,
+                    submitted_by: enrolled_student_id(),
+                    submitted_at: Utc::now(),
+                    grading_status: Some("failed".to_string()),
+                    grading_completed_at: None,
+                },
+            ]);
+        }
+
         Ok(vec![])
     }
 
@@ -1352,6 +1396,62 @@ async fn edit_assignment_page_happy_path_renders_form() {
     let html = body_to_string(response.into_body()).await;
     assert!(html.contains("Edit Assignment"));
     assert!(html.contains("Midterm Project"));
+    assert!(html.contains("Student Submission History"));
+    assert!(html.contains("View History"));
+}
+
+#[tokio::test]
+async fn instructor_submission_history_page_renders_for_owner() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&instructor_owner_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri(format!(
+            "/ui/instructors/assignments/{}/students/{}/submissions",
+            instructor_assignment_id(),
+            enrolled_student_id()
+        ))
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("Submission History"));
+    assert!(html.contains("student01"));
+    assert!(html.contains("submission-v2.rs"));
+    assert!(html.contains("completed"));
+    assert!(html.contains("submission-v1.rs"));
+    assert!(html.contains("failed"));
+}
+
+#[tokio::test]
+async fn instructor_submission_history_page_forbidden_for_non_owner_instructor() {
+    ensure_jwt_env();
+    let app = create_test_router();
+
+    let token = jwt::make_jwt_token(&other_instructor_id(), UserRole::Instructor)
+        .expect("token should be created");
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri(format!(
+            "/ui/instructors/assignments/{}/students/{}/submissions",
+            instructor_assignment_id(),
+            enrolled_student_id()
+        ))
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .body(Body::empty())
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
 }
 
 #[tokio::test]

@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use crate::common::error::AppError;
 use crate::domains::assignments::domain::{
-    model::AssignmentAttachment, repository::AssignmentRepositoryTrait,
+    model::{AssignmentAttachment, StudentAssignmentSubmission},
+    repository::AssignmentRepositoryTrait,
     service::AssignmentServiceTrait,
 };
 use crate::domains::assignments::dto::assignment_dto::{
@@ -95,6 +96,20 @@ where
             .await
             .map_err(|err| {
                 tracing::error!("Error fetching assignment attachments: {err}");
+                AppError::DatabaseError(err)
+            })
+    }
+
+    async fn list_student_submission_history(
+        &self,
+        assignment_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, AppError> {
+        self.repository
+            .list_student_submission_history(assignment_id, student_id)
+            .await
+            .map_err(|err| {
+                tracing::error!("Error fetching student submission history: {err}");
                 AppError::DatabaseError(err)
             })
     }

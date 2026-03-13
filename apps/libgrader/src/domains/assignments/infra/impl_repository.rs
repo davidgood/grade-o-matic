@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::domains::assignments::domain::{
-    model::{Assignment, AssignmentAttachment},
+    model::{Assignment, AssignmentAttachment, StudentAssignmentSubmission},
     repository::AssignmentRepositoryTrait,
 };
 
@@ -79,6 +79,29 @@ const LIST_ASSIGNMENT_ATTACHMENTS_QUERY: &str = r#"
     ORDER BY aa.created_at DESC
 "#;
 
+const LIST_STUDENT_SUBMISSION_HISTORY_QUERY: &str = r#"
+    SELECT
+        aa.assignment_id,
+        aa.file_id,
+        uf.file_name,
+        uf.origin_file_name,
+        uf.file_url,
+        uf.content_type,
+        uf.file_size,
+        aa.created_by AS submitted_by,
+        aa.created_at AS submitted_at,
+        gj.status AS grading_status,
+        gj.completed_at AS grading_completed_at
+    FROM assignment_attachments aa
+    INNER JOIN uploaded_files uf ON uf.id = aa.file_id
+    LEFT JOIN grading_jobs gj
+        ON gj.assignment_id = aa.assignment_id
+       AND gj.file_id = aa.file_id
+    WHERE aa.assignment_id = $1
+      AND aa.created_by = $2
+    ORDER BY aa.created_at DESC, uf.origin_file_name ASC
+"#;
+
 const LIST_ASSIGNMENTS_WITH_ATTACHMENT_COUNT_QUERY: &str = r#"
     SELECT
       a.id,
@@ -153,6 +176,20 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
                 .fetch_all(&self.pool)
                 .await?;
         Ok(attachments)
+    }
+
+    async fn list_student_submission_history(
+        &self,
+        assignment_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, Error> {
+        let rows =
+            sqlx::query_as::<_, StudentAssignmentSubmission>(LIST_STUDENT_SUBMISSION_HISTORY_QUERY)
+                .bind(assignment_id)
+                .bind(student_id)
+                .fetch_all(&self.pool)
+                .await?;
+        Ok(rows)
     }
 
     async fn add_attachment(

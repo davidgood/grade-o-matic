@@ -12,7 +12,7 @@ use grade_o_matic_web::domains::assignments::dto::assignment_dto::{
     AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
 use grade_o_matic_web::domains::assignments::{
-    AssignmentAttachment, AssignmentServiceTrait, assignment_routes,
+    AssignmentAttachment, AssignmentServiceTrait, StudentAssignmentSubmission, assignment_routes,
 };
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -104,6 +104,14 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         &self,
         _assignment_id: Uuid,
     ) -> Result<Vec<AssignmentAttachment>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn list_student_submission_history(
+        &self,
+        _assignment_id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, AppError> {
         Ok(vec![])
     }
 

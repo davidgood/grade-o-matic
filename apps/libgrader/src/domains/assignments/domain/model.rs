@@ -30,6 +30,21 @@ pub struct AssignmentAttachment {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct StudentAssignmentSubmission {
+    pub assignment_id: uuid::Uuid,
+    pub file_id: uuid::Uuid,
+    pub file_name: String,
+    pub origin_file_name: String,
+    pub file_url: String,
+    pub content_type: String,
+    pub file_size: i64,
+    pub submitted_by: uuid::Uuid,
+    pub submitted_at: DateTime<Utc>,
+    pub grading_status: Option<String>,
+    pub grading_completed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 
 pub struct AssignmentWithAttachmentCount {
     pub id: uuid::Uuid,
