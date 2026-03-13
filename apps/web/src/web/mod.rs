@@ -65,6 +65,11 @@ fn build_embedded_environment() -> Environment<'static> {
     )
     .expect("Failed to register assignments/create_assignment.html");
     env.add_template(
+        "assignments/instructor_submission_history.html",
+        embedded_template!("assignments/instructor_submission_history.html"),
+    )
+    .expect("Failed to register assignments/instructor_submission_history.html");
+    env.add_template(
         "assignments/partials/_row.html",
         embedded_template!("assignments/partials/_row.html"),
     )
@@ -113,6 +118,7 @@ fn build_embedded_environment() -> Environment<'static> {
 fn register_filters(env: &mut Environment<'static>) {
     env.add_filter("format_date", format_date);
     env.add_filter("format_datetime_local", format_datetime_local);
+    env.add_filter("format_datetime_display", format_datetime_display);
 }
 
 fn format_date(value: Value) -> String {
@@ -146,6 +152,26 @@ fn format_datetime_local(value: Value) -> String {
     match DateTime::parse_from_rfc3339(unquoted) {
         Ok(dt) => dt.with_timezone(&Utc).format("%Y-%m-%dT%H:%M").to_string(),
         Err(_) => "".to_string(),
+    }
+}
+
+fn format_datetime_display(value: Value) -> String {
+    if value.is_undefined() {
+        return "-".to_string();
+    }
+
+    let raw = value.to_string();
+    if raw.is_empty() || raw == "none" || raw == "null" {
+        return "-".to_string();
+    }
+
+    let unquoted = raw.trim_matches('"');
+    match DateTime::parse_from_rfc3339(unquoted) {
+        Ok(dt) => dt
+            .with_timezone(&Utc)
+            .format("%b %-d, %Y %H:%M UTC")
+            .to_string(),
+        Err(_) => raw,
     }
 }
 

@@ -63,5 +63,39 @@
     {% if assignment %}
     {% include "assignments/partials/_attachments_panel.html" %}
     {% endif %}
+
+    {% if assignment and roster_members and roster_members|length > 0 %}
+    <section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+        <header class="mb-3 space-y-1">
+            <h2 class="text-xl font-semibold">Student Submission History</h2>
+            <p class="text-sm text-slate-600">Open a student-specific history view for this assignment.</p>
+        </header>
+        <div class="table-frame rounded-lg border border-slate-200 bg-white">
+            <table class="min-w-full divide-y divide-slate-200 text-sm">
+                <thead class="bg-slate-50">
+                <tr>
+                    <th class="px-4 py-2 text-left font-medium text-slate-600">Student</th>
+                    <th class="px-4 py-2 text-left font-medium text-slate-600">Email</th>
+                    <th class="px-4 py-2 text-right font-medium text-slate-600">Actions</th>
+                </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                {% for member in roster_members %}
+                <tr>
+                    <td class="px-4 py-2 font-medium text-slate-900">{{ member.username }}</td>
+                    <td class="px-4 py-2 text-slate-700">{{ member.email or "-" }}</td>
+                    <td class="px-4 py-2 text-right">
+                        <a class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
+                           href="/ui/instructors/assignments/{{ assignment.id }}/students/{{ member.user_id }}/submissions">
+                            View History
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
 </section>
 {% endblock %}

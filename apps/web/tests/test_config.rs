@@ -113,13 +113,31 @@ fn config_defaults_when_env_missing() {
     assert_eq!(config.jwt_secret, "");
     assert_eq!(config.service_host, "0.0.0.0");
     assert_eq!(config.service_port, 3030);
-    assert_eq!(config.assets_public_path, "assets/public");
-    assert_eq!(config.assets_public_url, "/public");
-    assert_eq!(config.assets_private_path, "assets/private");
-    assert_eq!(config.assets_private_url, "/private");
+    assert_eq!(config.assets_public_path, "apps/web/assets/public");
+    assert_eq!(config.assets_public_url, "/assets/public");
+    assert_eq!(config.assets_private_path, "apps/web/assets/private");
+    assert_eq!(config.assets_private_url, "/assets/private");
     assert_eq!(config.asset_max_size, 50 * 1024 * 1024);
     assert!(!config.oidc_enabled);
     assert!(config.database_url.is_none());
+}
+
+#[test]
+fn config_resolves_legacy_asset_paths_from_repo_root_layout() {
+    let _lock = GLOBAL_ENV_LOCK.lock().expect("poisoned env lock");
+    let _cwd = CwdGuard::enter_temp_dir();
+    let _env = EnvGuard::clear(TRACKED_VARS);
+
+    fs::create_dir_all("apps/web/assets/public").expect("failed to create public asset path");
+    fs::create_dir_all("apps/web/assets/private").expect("failed to create private asset path");
+
+    set_env("ASSETS_PUBLIC_PATH", "assets/public");
+    set_env("ASSETS_PRIVATE_PATH", "assets/private");
+
+    let config = Config::from_env().expect("expected legacy asset paths to resolve");
+
+    assert_eq!(config.assets_public_path, "apps/web/assets/public");
+    assert_eq!(config.assets_private_path, "apps/web/assets/private");
 }
 
 #[test]

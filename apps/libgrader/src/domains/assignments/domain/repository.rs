@@ -1,4 +1,6 @@
-use super::model::{Assignment, AssignmentAttachment, AssignmentWithAttachmentCount};
+use super::model::{
+    Assignment, AssignmentAttachment, AssignmentWithAttachmentCount, StudentAssignmentSubmission,
+};
 use crate::domains::assignments::dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto};
 use async_trait::async_trait;
 use sqlx::PgPool;
@@ -23,6 +25,11 @@ pub trait AssignmentRepositoryTrait: Send + Sync {
         &self,
         assignment_id: Uuid,
     ) -> Result<Vec<AssignmentAttachment>, sqlx::Error>;
+    async fn list_student_submission_history(
+        &self,
+        assignment_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentSubmission>, sqlx::Error>;
 
     async fn add_attachment(
         &self,
