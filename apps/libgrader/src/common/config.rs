@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, anyhow, bail};
 use regex::Regex;
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::{env, time::Duration};
+use std::{env, path::Path, time::Duration};
 use tokio::time::sleep;
 
 /// Config is a struct that holds the configuration for the application.
@@ -93,11 +93,17 @@ impl Config {
             oidc_client_id,
             oidc_redirect_url,
 
-            assets_public_path: env_var_or_default("ASSETS_PUBLIC_PATH", "assets/public"),
-            assets_public_url: env_var_or_default("ASSETS_PUBLIC_URL", "/public"),
+            assets_public_path: resolve_asset_path(&env_var_or_default(
+                "ASSETS_PUBLIC_PATH",
+                "apps/web/assets/public",
+            )),
+            assets_public_url: env_var_or_default("ASSETS_PUBLIC_URL", "/assets/public"),
 
-            assets_private_path: env_var_or_default("ASSETS_PRIVATE_PATH", "assets/private"),
-            assets_private_url: env_var_or_default("ASSETS_PRIVATE_URL", "/private"),
+            assets_private_path: resolve_asset_path(&env_var_or_default(
+                "ASSETS_PRIVATE_PATH",
+                "apps/web/assets/private",
+            )),
+            assets_private_url: env_var_or_default("ASSETS_PRIVATE_URL", "/assets/private"),
 
             asset_allowed_extensions_pattern: Regex::new(&format!(r"(?i)^.*\.({})$", ext_val))
                 .unwrap_or_else(|_| {
@@ -146,6 +152,20 @@ fn env_var_optional(name: &str) -> Option<String> {
             Some(trimmed.to_string())
         }
     })
+}
+
+fn resolve_asset_path(raw: &str) -> String {
+    let configured_path = Path::new(raw);
+    if configured_path.exists() {
+        return raw.to_string();
+    }
+
+    let repo_relative_path = Path::new("apps/web").join(raw);
+    if repo_relative_path.exists() {
+        return repo_relative_path.to_string_lossy().into_owned();
+    }
+
+    raw.to_string()
 }
 
 fn parse_bool_with_default(name: &str, default: bool) -> Result<bool> {

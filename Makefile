@@ -1,5 +1,5 @@
 css:
-	sass apps/web/scss/app.scss assets/public/grade-o-matic.min.css --style=compressed
+	sass apps/web/scss/app.scss apps/web/assets/public/grade-o-matic.min.css --style=compressed
 
 chef-recipe:
 	docker run --rm -v "$$(pwd)":/app -w /app lukemathwalker/cargo-chef:latest-rust-slim-trixie cargo chef prepare --recipe-path recipe.json
