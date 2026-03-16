@@ -24,7 +24,8 @@ mod infra {
 
 pub use api::routes::assignment_routes;
 pub use domain::model::{
-    Assignment, AssignmentAttachment, AssignmentWithAttachmentCount, StudentAssignmentSubmission,
+    Assignment, AssignmentAttachment, AssignmentDeadlineType, AssignmentWithAttachmentCount,
+    StudentAssignmentSubmission,
 };
 pub use domain::repository::AssignmentRepositoryTrait;
 pub use domain::service::AssignmentServiceTrait;

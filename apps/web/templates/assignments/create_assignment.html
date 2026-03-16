@@ -48,6 +48,23 @@
                    class="auth-input"/>
         </div>
 
+        <div class="space-y-2">
+            <label for="deadline_type" class="text-sm font-medium text-slate-700">Deadline Type</label>
+            <select id="deadline_type" name="deadline_type" class="auth-input" required>
+                <option value="hard_cutoff"
+                        {% if (assignment and assignment.deadline_type == "hard_cutoff") or (not assignment and deadline_type_value == "hard_cutoff") %}selected{% endif %}>
+                    Hard cutoff
+                </option>
+                <option value="soft_deadline"
+                        {% if (assignment and assignment.deadline_type == "soft_deadline") or (not assignment and deadline_type_value == "soft_deadline") %}selected{% endif %}>
+                    Soft deadline
+                </option>
+            </select>
+            <p class="text-xs text-slate-500">
+                Hard cutoff blocks submissions after the due time. Soft deadline allows submissions but marks them late.
+            </p>
+        </div>
+
         <div class="flex gap-2">
             <button type="submit"
                     class="btn-primary">

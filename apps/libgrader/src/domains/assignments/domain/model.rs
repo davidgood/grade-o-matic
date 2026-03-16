@@ -1,6 +1,15 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use utoipa::ToSchema;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, ToSchema, sqlx::Type, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+#[sqlx(type_name = "assignment_deadline_type_enum", rename_all = "snake_case")]
+pub enum AssignmentDeadlineType {
+    HardCutoff,
+    SoftDeadline,
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Assignment {
@@ -9,6 +18,7 @@ pub struct Assignment {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: AssignmentDeadlineType,
     pub points: Option<i16>,
     pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
@@ -40,6 +50,8 @@ pub struct StudentAssignmentSubmission {
     pub file_size: i64,
     pub submitted_by: uuid::Uuid,
     pub submitted_at: DateTime<Utc>,
+    pub deadline_type: AssignmentDeadlineType,
+    pub is_late: bool,
     pub grading_status: Option<String>,
     pub grading_completed_at: Option<DateTime<Utc>>,
 }
@@ -52,6 +64,7 @@ pub struct AssignmentWithAttachmentCount {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: AssignmentDeadlineType,
     pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
     pub modified_by: Option<uuid::Uuid>,

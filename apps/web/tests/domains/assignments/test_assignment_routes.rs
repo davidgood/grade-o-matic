@@ -12,7 +12,8 @@ use grade_o_matic_web::domains::assignments::dto::assignment_dto::{
     AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
 };
 use grade_o_matic_web::domains::assignments::{
-    AssignmentAttachment, AssignmentServiceTrait, StudentAssignmentSubmission, assignment_routes,
+    AssignmentAttachment, AssignmentDeadlineType, AssignmentServiceTrait,
+    StudentAssignmentSubmission, assignment_routes,
 };
 use sqlx::PgPool;
 use std::collections::HashMap;
@@ -48,6 +49,7 @@ impl FakeAssignmentService {
             title: "Seed Assignment".to_string(),
             description: Some("This is a seed assignment for testing purposes.".to_string()),
             due_at: Some(Utc::now()),
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(100),
         };
 
@@ -94,6 +96,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                deadline_type: assignment.deadline_type,
                 points: assignment.points,
                 attachment_count: 0,
             })
@@ -145,6 +148,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
+            deadline_type: assignment.deadline_type,
             points: None,
         };
 
@@ -163,6 +167,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         assignment.title = payload.title.clone();
         assignment.description = payload.description.clone();
         assignment.due_at = payload.due_at;
+        assignment.deadline_type = payload.deadline_type;
 
         Ok(assignment.clone())
     }
@@ -229,6 +234,7 @@ async fn create_assignment(app: &Router) -> (CreateAssignmentDto, AssignmentDto)
         title: "Test Assignment".to_string(),
         description: None,
         due_at: Some(Utc::now()),
+        deadline_type: AssignmentDeadlineType::SoftDeadline,
         points: Some(100),
         modified_by: TEST_USER_ID,
     };
@@ -289,6 +295,7 @@ async fn test_create_assignment() {
     assert_eq!(assignment_dto.title, payload.title);
     assert_eq!(assignment_dto.description, payload.description);
     assert_eq!(assignment_dto.due_at, payload.due_at);
+    assert_eq!(assignment_dto.deadline_type, payload.deadline_type);
 }
 
 #[tokio::test]
@@ -302,6 +309,7 @@ async fn test_update_assignment() {
         title: "Updated Title".to_string(),
         description: Some("Updated Description".to_string()),
         due_at: Some(Utc::now()),
+        deadline_type: AssignmentDeadlineType::HardCutoff,
         points: Some(100),
         modified_by: Default::default(),
     };
@@ -317,6 +325,7 @@ async fn test_update_assignment() {
     assert_eq!(assignment_dto.title, payload.title);
     assert_eq!(assignment_dto.description, payload.description);
     assert_eq!(assignment_dto.due_at, payload.due_at);
+    assert_eq!(assignment_dto.deadline_type, payload.deadline_type);
 }
 
 #[tokio::test]

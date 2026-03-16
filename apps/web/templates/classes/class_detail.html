@@ -101,7 +101,8 @@
                 <td class="px-4 py-2 text-slate-700">{{ assignment.description or "-" }}</td>
                 <td class="px-4 py-2 text-slate-700">
                     {% if assignment.due_at %}
-                    {{ assignment.due_at|format_date }}
+                    {{ assignment.due_at|format_datetime_display }}
+                    <div class="text-xs text-slate-500 mt-1">{{ assignment.deadline_type|format_deadline_type }}</div>
                     {% else %}
                     -
                     {% endif %}

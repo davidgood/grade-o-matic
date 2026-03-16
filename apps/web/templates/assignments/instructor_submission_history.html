@@ -44,6 +44,9 @@
                 <td class="px-4 py-2 text-slate-700">{{ submission.file_size }} bytes</td>
                 <td class="px-4 py-2 text-slate-700 uppercase">
                     {{ submission.grading_status|replace("_", " ") }}
+                    {% if submission.is_late %}
+                    <div class="text-xs normal-case text-amber-700 mt-1">Late submission</div>
+                    {% endif %}
                     {% if submission.grading_completed_at %}
                     <div class="text-xs normal-case text-slate-500">
                         Completed {{ submission.grading_completed_at|format_datetime_display }}

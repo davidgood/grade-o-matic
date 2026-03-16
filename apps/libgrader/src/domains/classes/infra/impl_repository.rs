@@ -32,6 +32,7 @@ pub const LIST_CLASSES_WITH_ASSIGNMENTS: &str = r#"
            a.title as assignment_title,
            a.description as assignment_description,
            a.due_at,
+           a.deadline_type,
            a.points
     FROM classes c
     LEFT JOIN assignments a on c.id = a.class_id

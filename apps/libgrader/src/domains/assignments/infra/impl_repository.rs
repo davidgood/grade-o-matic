@@ -21,6 +21,7 @@ const FIND_ALL_ASSIGNMENTS_QUERY: &str = r#"
         a.title,
         a.description,
         a.due_at,
+        a.deadline_type,
         a.points,
         a.created_by,
         a.created_at,
@@ -37,6 +38,7 @@ SELECT
     a.title,
     a.description,
     a.due_at,
+    a.deadline_type,
     a.points,
     a.created_by,
     a.created_at,
@@ -52,6 +54,7 @@ SELECT
     a.title,
     a.description,
     a.due_at,
+    a.deadline_type,
     a.points,
     a.created_by,
     a.created_at,
@@ -90,9 +93,18 @@ const LIST_STUDENT_SUBMISSION_HISTORY_QUERY: &str = r#"
         uf.file_size,
         aa.created_by AS submitted_by,
         aa.created_at AS submitted_at,
+        a.deadline_type,
+        CASE
+            WHEN a.deadline_type = 'soft_deadline'
+                AND a.due_at IS NOT NULL
+                AND aa.created_at > a.due_at
+            THEN TRUE
+            ELSE FALSE
+        END AS is_late,
         gj.status AS grading_status,
         gj.completed_at AS grading_completed_at
     FROM assignment_attachments aa
+    INNER JOIN assignments a ON a.id = aa.assignment_id
     INNER JOIN uploaded_files uf ON uf.id = aa.file_id
     LEFT JOIN grading_jobs gj
         ON gj.assignment_id = aa.assignment_id
@@ -109,6 +121,7 @@ const LIST_ASSIGNMENTS_WITH_ATTACHMENT_COUNT_QUERY: &str = r#"
       a.title,
       a.description,
       a.due_at,
+      a.deadline_type,
       a.points,
       a.created_by,
       a.created_at,
@@ -119,7 +132,7 @@ const LIST_ASSIGNMENTS_WITH_ATTACHMENT_COUNT_QUERY: &str = r#"
     LEFT JOIN assignment_attachments aa ON aa.assignment_id = a.id
     WHERE a.class_id = $1
     GROUP BY
-      a.id, a.class_id, a.title, a.description, a.due_at,
+      a.id, a.class_id, a.title, a.description, a.due_at, a.deadline_type,
       a.created_by, a.created_at, a.modified_by, a.modified_at
     ORDER BY a.due_at NULLS LAST, a.created_at DESC;
 "#;
@@ -258,8 +271,10 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
 
         sqlx::query(
             r#"
-                INSERT INTO assignments (id, class_id, title, description, due_at, points, created_by, modified_by)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                INSERT INTO assignments (
+                    id, class_id, title, description, due_at, deadline_type, points, created_by, modified_by
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
                 "#,
         )
             .bind(id)
@@ -267,6 +282,7 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
             .bind(assignment.title.clone())
             .bind(assignment.description.clone())
             .bind(assignment.due_at)
+            .bind(assignment.deadline_type)
             .bind(assignment.points)
             .bind(assignment.modified_by)
             .bind(assignment.modified_by)
@@ -296,16 +312,18 @@ impl AssignmentRepositoryTrait for AssignmentRepository {
                     title = $2,
                     description = $3,
                     due_at = $4,
-                    points = $5,
-                    modified_by = $6,
+                    deadline_type = $5,
+                    points = $6,
+                    modified_by = $7,
                     modified_at = NOW()
-                WHERE id = $7
+                WHERE id = $8
                 "#,
             )
             .bind(assignment.class_id)
             .bind(assignment.title.clone())
             .bind(assignment.description.clone())
             .bind(assignment.due_at)
+            .bind(assignment.deadline_type)
             .bind(assignment.points)
             .bind(assignment.modified_by)
             .bind(id)
