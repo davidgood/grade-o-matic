@@ -1,4 +1,6 @@
-use crate::domains::assignments::domain::model::{Assignment, AssignmentWithAttachmentCount};
+use crate::domains::assignments::domain::model::{
+    Assignment, AssignmentDeadlineType, AssignmentWithAttachmentCount,
+};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use simple_dto_mapper_derive::DtoFrom;
@@ -14,6 +16,7 @@ pub struct AssignmentDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: AssignmentDeadlineType,
     pub points: Option<i16>,
 }
 
@@ -24,6 +27,7 @@ pub struct CreateAssignmentDto {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: AssignmentDeadlineType,
     pub modified_by: uuid::Uuid,
     pub points: Option<i16>,
 }
@@ -36,6 +40,7 @@ pub struct UpdateAssignmentDto {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: AssignmentDeadlineType,
     pub modified_by: uuid::Uuid,
     pub points: Option<i16>,
 }
@@ -49,6 +54,7 @@ pub struct AssignmentWithAttachmentCountDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: AssignmentDeadlineType,
     pub points: Option<i16>,
     pub attachment_count: i32,
 }

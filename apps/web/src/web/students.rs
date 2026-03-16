@@ -1,6 +1,7 @@
 use crate::common::error::AppError;
 use crate::common::jwt::Claims;
 use crate::common::multipart_helper::parse_multipart_to_maps;
+use crate::domains::assignments::AssignmentDeadlineType;
 use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::class_memberships::ClassMembershipServiceTrait;
 use crate::domains::classes::ClassServiceTrait;
@@ -86,6 +87,7 @@ struct StudentAssignmentRow {
     title: String,
     description: Option<String>,
     due_at: Option<chrono::DateTime<chrono::Utc>>,
+    deadline_type: AssignmentDeadlineType,
     points: Option<i16>,
 }
 
@@ -117,6 +119,7 @@ pub async fn students_assignments_page(
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                deadline_type: assignment.deadline_type,
                 points: assignment.points,
             });
         }
@@ -151,6 +154,7 @@ struct StudentSubmissionAttachment {
     content_type: String,
     file_size: i64,
     created_at: chrono::DateTime<chrono::Utc>,
+    is_late: bool,
 }
 
 async fn get_student_assignment_context(
@@ -195,6 +199,12 @@ async fn get_student_assignment_context(
             content_type: a.content_type,
             file_size: a.file_size,
             created_at: a.created_at,
+            is_late: matches!(
+                assignment.deadline_type,
+                AssignmentDeadlineType::SoftDeadline
+            ) && assignment
+                .due_at
+                .is_some_and(|due_at| a.created_at > due_at),
         })
         .collect::<Vec<_>>();
 
@@ -297,6 +307,24 @@ pub async fn submit_student_assignment(
                 submission_files => submission_files,
                 submitted => false,
                 error => "Add code in the textarea or attach at least one file before submitting.",
+                authenticity_token => token.authenticity_token().unwrap_or_default(),
+            },
+        )?;
+        return Ok((StatusCode::BAD_REQUEST, token, Html(html)).into_response());
+    }
+
+    if matches!(assignment.deadline_type, AssignmentDeadlineType::HardCutoff)
+        && assignment.due_at.is_some_and(|due_at| Utc::now() > due_at)
+    {
+        let html = render_template(
+            "assignments/student_detail.html",
+            context! {
+                title => format!("Assignment: {}", assignment.title),
+                class => class,
+                assignment => assignment,
+                submission_files => submission_files,
+                submitted => false,
+                error => "This assignment is closed. The hard cutoff deadline has passed.",
                 authenticity_token => token.authenticity_token().unwrap_or_default(),
             },
         )?;

@@ -119,6 +119,7 @@ fn register_filters(env: &mut Environment<'static>) {
     env.add_filter("format_date", format_date);
     env.add_filter("format_datetime_local", format_datetime_local);
     env.add_filter("format_datetime_display", format_datetime_display);
+    env.add_filter("format_deadline_type", format_deadline_type);
 }
 
 fn format_date(value: Value) -> String {
@@ -172,6 +173,23 @@ fn format_datetime_display(value: Value) -> String {
             .format("%b %-d, %Y %H:%M UTC")
             .to_string(),
         Err(_) => raw,
+    }
+}
+
+fn format_deadline_type(value: Value) -> String {
+    if value.is_undefined() {
+        return "".to_string();
+    }
+
+    let raw = value.to_string();
+    if raw.is_empty() || raw == "none" || raw == "null" {
+        return "".to_string();
+    }
+
+    match raw.trim_matches('"') {
+        "hard_cutoff" => "Hard cutoff".to_string(),
+        "soft_deadline" => "Soft deadline".to_string(),
+        other => other.replace('_', " "),
     }
 }
 

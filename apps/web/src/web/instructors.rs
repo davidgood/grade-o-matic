@@ -15,8 +15,8 @@ use uuid::Uuid;
 use crate::common::error::AppError;
 use crate::common::jwt::Claims;
 use crate::common::multipart_helper::parse_multipart_to_maps;
-use crate::domains::assignments::AssignmentServiceTrait;
 use crate::domains::assignments::dto::assignment_dto::UpdateAssignmentDto;
+use crate::domains::assignments::{AssignmentDeadlineType, AssignmentServiceTrait};
 use crate::domains::class_memberships::{
     ClassMembershipRole, ClassMembershipServiceTrait,
     dto::class_membership_dto::CreateClassMembershipDto,
@@ -60,8 +60,17 @@ struct InstructorStudentSubmissionRow {
     content_type: String,
     file_size: i64,
     submitted_at: DateTime<Utc>,
+    is_late: bool,
     grading_status: String,
     grading_completed_at: Option<DateTime<Utc>>,
+}
+
+fn parse_deadline_type(value: &str) -> Result<AssignmentDeadlineType, AppError> {
+    match value {
+        "hard_cutoff" => Ok(AssignmentDeadlineType::HardCutoff),
+        "soft_deadline" => Ok(AssignmentDeadlineType::SoftDeadline),
+        _ => Err(AppError::ValidationError("Invalid deadline type".into())),
+    }
 }
 
 pub async fn instructors_page(
@@ -572,6 +581,9 @@ pub async fn edit_assignment_page(
             form_action => format!("/ui/instructors/assignments/{assignment_id}/edit"),
             title_value => assignment.title.clone(),
             description_value => assignment.description.clone(),
+            due_at_value => assignment.due_at,
+            deadline_type_value => assignment.deadline_type,
+            points_value => assignment.points,
             authenticity_token => authenticity_token,
         },
     )?;
@@ -629,6 +641,7 @@ pub async fn instructor_student_submission_history_page(
             content_type: submission.content_type,
             file_size: submission.file_size,
             submitted_at: submission.submitted_at,
+            is_late: submission.is_late,
             grading_status: submission
                 .grading_status
                 .unwrap_or_else(|| "not_queued".to_string()),
@@ -684,8 +697,8 @@ pub async fn edit_assignment_submit(
     let title = form.title.trim().to_string();
     let description_value = form.description.as_deref().unwrap_or("").trim().to_string();
     let points = form.points;
-
     let due_at_value = form.due_at.as_deref().unwrap_or("").trim().to_string();
+    let deadline_type_value = form.deadline_type.trim().to_string();
 
     if title.is_empty() {
         let html = render_template(
@@ -702,6 +715,8 @@ pub async fn edit_assignment_submit(
                 title_value => title,
                 description_value => description_value,
                 due_at_value => due_at_value,
+                deadline_type_value => deadline_type_value,
+                points_value => points,
                 authenticity_token => token.authenticity_token().unwrap_or_default(),
             },
         )?;
@@ -726,6 +741,7 @@ pub async fn edit_assignment_submit(
                 .map_err(|_| AppError::ValidationError("Invalid due date format".into()))?;
             Some(DateTime::<Utc>::from_naive_utc_and_offset(parsed, Utc))
         },
+        deadline_type: parse_deadline_type(&deadline_type_value)?,
         points: if points.is_negative() {
             Some(0)
         } else {
@@ -754,7 +770,9 @@ pub async fn edit_assignment_submit(
                     form_action => format!("/ui/instructors/assignments/{assignment_id}/edit"),
                     title_value => "",
                     due_at_value => due_at_value,
+                    deadline_type_value => deadline_type_value,
                     description_value => description_value,
+                    points_value => points,
                     authenticity_token => token.authenticity_token().unwrap_or_default(),
                 },
             )?;
@@ -870,6 +888,7 @@ pub struct EditAssignmentForm {
     title: String,
     description: Option<String>,
     due_at: Option<String>,
+    deadline_type: String,
     authenticity_token: String,
     points: i16,
 }

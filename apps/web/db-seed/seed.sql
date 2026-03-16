@@ -101,13 +101,14 @@ VALUES ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-0000000
         '00000000-0000-0000-0000-000000000004', 'student', NOW(), NOW());
 
 -- Assignments
-INSERT INTO assignments (id, class_id, title, description, due_at, points, created_by, created_at, modified_by,
-                         modified_at)
+INSERT INTO assignments (id, class_id, title, description, due_at, deadline_type, points, created_by, created_at,
+                         modified_by, modified_at)
 VALUES ('40000000-0000-0000-0000-000000000001',
         '20000000-0000-0000-0000-000000000001',
         'Ownership and Borrowing',
         'Practice references, lifetimes, and ownership transfer.',
         NOW() + INTERVAL '7 days',
+        'soft_deadline',
         100,
         '00000000-0000-0000-0000-000000000002',
         NOW(),
@@ -118,6 +119,7 @@ VALUES ('40000000-0000-0000-0000-000000000001',
         'Error Handling',
         'Build a CLI with robust Result-based error handling.',
         NOW() + INTERVAL '14 days',
+        'soft_deadline',
         50,
         '00000000-0000-0000-0000-000000000002',
         NOW(),
@@ -128,6 +130,7 @@ VALUES ('40000000-0000-0000-0000-000000000001',
         'HTTP Middleware',
         'Implement request logging and auth middleware in Axum.',
         NOW() + INTERVAL '10 days',
+        'soft_deadline',
         100,
         '00000000-0000-0000-0000-000000000002',
         NOW(),

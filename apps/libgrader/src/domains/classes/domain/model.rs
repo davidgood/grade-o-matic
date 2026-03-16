@@ -2,6 +2,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
+use crate::domains::assignments::AssignmentDeadlineType;
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Class {
     pub id: uuid::Uuid,
@@ -24,5 +26,6 @@ pub struct ClassesWithAssignments {
     pub assignment_title: Option<String>,
     pub assignment_description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: Option<AssignmentDeadlineType>,
     pub points: Option<i16>,
 }

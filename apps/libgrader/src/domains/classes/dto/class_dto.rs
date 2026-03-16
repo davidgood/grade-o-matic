@@ -4,6 +4,7 @@ use simple_dto_mapper_derive::DtoFrom;
 use utoipa::ToSchema;
 use validator::Validate;
 
+use crate::domains::assignments::AssignmentDeadlineType;
 use crate::domains::classes::domain::model::{Class, ClassesWithAssignments};
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
@@ -50,5 +51,6 @@ pub struct ClassesWithAssignmentsDto {
     pub assignment_description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    pub deadline_type: Option<AssignmentDeadlineType>,
     pub points: Option<i16>,
 }

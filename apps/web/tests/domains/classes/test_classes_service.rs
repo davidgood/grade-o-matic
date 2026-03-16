@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use chrono::Utc;
 use grade_o_matic_web::{
     common::error::AppError,
+    domains::assignments::AssignmentDeadlineType,
     domains::classes::{
         Class, ClassRepositoryTrait, ClassService, ClassServiceTrait, ClassesWithAssignments,
         create_class_service,
@@ -249,6 +250,7 @@ async fn list_classes_with_assignments_returns_rows() {
             assignment_title: Some("Homework 1".to_string()),
             assignment_description: Some("Graph traversals".to_string()),
             due_at: None,
+            deadline_type: Some(AssignmentDeadlineType::SoftDeadline),
             points: Some(10),
         }],
         ..Default::default()

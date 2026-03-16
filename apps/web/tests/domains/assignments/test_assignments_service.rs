@@ -5,9 +5,9 @@ use chrono::Utc;
 use grade_o_matic_web::{
     common::error::AppError,
     domains::assignments::{
-        Assignment, AssignmentAttachment, AssignmentRepositoryTrait, AssignmentService,
-        AssignmentServiceTrait, AssignmentWithAttachmentCount, StudentAssignmentSubmission,
-        create_assignment_service,
+        Assignment, AssignmentAttachment, AssignmentDeadlineType, AssignmentRepositoryTrait,
+        AssignmentService, AssignmentServiceTrait, AssignmentWithAttachmentCount,
+        StudentAssignmentSubmission, create_assignment_service,
         dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto},
     },
 };
@@ -83,6 +83,7 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                deadline_type: assignment.deadline_type,
                 points: assignment.points,
                 created_by: assignment.created_by,
                 created_at: assignment.created_at,
@@ -157,6 +158,7 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
+            deadline_type: assignment.deadline_type,
             points: Some(100),
             created_by: Some(assignment.modified_by),
             created_at: Some(now),
@@ -188,6 +190,7 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
         existing.title = assignment.title;
         existing.description = assignment.description;
         existing.due_at = assignment.due_at;
+        existing.deadline_type = assignment.deadline_type;
         existing.modified_by = Some(assignment.modified_by);
         existing.modified_at = Some(Utc::now());
 
@@ -214,6 +217,7 @@ fn seed_assignment(id: Uuid) -> Assignment {
         title: "assignment-1".to_string(),
         description: Some("description".to_string()),
         due_at: Some(Utc::now()),
+        deadline_type: AssignmentDeadlineType::SoftDeadline,
         points: Some(100),
         created_by: Some(user_id),
         created_at: Some(Utc::now()),
@@ -266,6 +270,7 @@ async fn create_persists_and_returns_assignment() {
         title: "new assignment".to_string(),
         description: Some("desc".to_string()),
         due_at: Some(Utc::now()),
+        deadline_type: AssignmentDeadlineType::SoftDeadline,
         points: Some(100),
         modified_by,
     };
@@ -287,6 +292,7 @@ async fn update_returns_not_found_error_when_missing() {
         title: "updated".to_string(),
         description: Some("updated".to_string()),
         due_at: Some(Utc::now()),
+        deadline_type: AssignmentDeadlineType::SoftDeadline,
         points: Some(100),
         modified_by: Uuid::new_v4(),
     };
@@ -456,6 +462,7 @@ async fn db_create_update_and_delete_assignment_happy_path() {
             title: "Project 1".to_string(),
             description: Some("Implement parser".to_string()),
             due_at: Some(Utc::now() + chrono::Duration::days(7)),
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(100),
             modified_by: instructor_id,
         })
@@ -471,6 +478,7 @@ async fn db_create_update_and_delete_assignment_happy_path() {
             title: "Project 1 Revised".to_string(),
             description: Some("Implement parser + tests".to_string()),
             due_at: Some(Utc::now() + chrono::Duration::days(10)),
+            deadline_type: AssignmentDeadlineType::HardCutoff,
             points: Some(120),
             modified_by: instructor_id,
         })
@@ -506,6 +514,7 @@ async fn db_list_by_class_with_attachment_count_filters_and_counts() {
             title: "Counted Assignment".to_string(),
             description: Some("with attachments".to_string()),
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(50),
             modified_by: instructor_id,
         })
@@ -518,6 +527,7 @@ async fn db_list_by_class_with_attachment_count_filters_and_counts() {
             title: "Other Assignment".to_string(),
             description: Some("different class".to_string()),
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(10),
             modified_by: instructor_id,
         })
@@ -567,6 +577,7 @@ async fn db_attach_list_and_remove_file_happy_and_edge_paths() {
             title: "Upload Work".to_string(),
             description: Some("submit assets".to_string()),
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(25),
             modified_by: instructor_id,
         })
@@ -621,6 +632,7 @@ async fn db_list_student_submission_history_returns_student_attempts_with_status
             title: "History Assignment".to_string(),
             description: Some("multiple attempts".to_string()),
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(75),
             modified_by: instructor_id,
         })
@@ -682,6 +694,7 @@ async fn db_update_and_delete_missing_assignment_returns_not_found() {
             title: "missing".to_string(),
             description: Some("missing".to_string()),
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(5),
             modified_by: instructor_id,
         })
@@ -769,6 +782,8 @@ async fn list_student_submission_history_returns_rows() {
             file_size: 2048,
             submitted_by: student_id,
             submitted_at: Utc::now(),
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
+            is_late: true,
             grading_status: Some("completed".to_string()),
             grading_completed_at: Some(Utc::now()),
         }],
@@ -875,6 +890,7 @@ async fn create_returns_database_error_or_not_found_for_missing_row() {
             title: "new".to_string(),
             description: None,
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(10),
             modified_by: Uuid::new_v4(),
         })
@@ -892,6 +908,7 @@ async fn create_returns_database_error_or_not_found_for_missing_row() {
             title: "new".to_string(),
             description: None,
             due_at: None,
+            deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(10),
             modified_by: Uuid::new_v4(),
         })
@@ -923,6 +940,7 @@ async fn find_update_and_delete_return_database_error_or_not_found_paths() {
                 title: "t".to_string(),
                 description: None,
                 due_at: None,
+                deadline_type: AssignmentDeadlineType::SoftDeadline,
                 points: Some(1),
                 modified_by: Uuid::new_v4(),
             })

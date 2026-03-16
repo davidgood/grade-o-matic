@@ -38,8 +38,13 @@
     <dl class="grid gap-3 md:grid-cols-3">
         <div>
             <dt class="text-xs uppercase tracking-wide text-slate-500">Due Date</dt>
-            <dd class="text-slate-800">{% if assignment.due_at %}{{ assignment.due_at|format_date }}{% else %}-{% endif
-                %}
+            <dd class="text-slate-800">
+                {% if assignment.due_at %}
+                {{ assignment.due_at|format_datetime_display }}
+                <div class="text-xs text-slate-500 mt-1">{{ assignment.deadline_type|format_deadline_type }}</div>
+                {% else %}
+                -
+                {% endif %}
             </dd>
         </div>
         <div>
@@ -124,6 +129,9 @@
                 {{ file.origin_file_name }}
             </a>
             <span class="text-slate-500">({{ file.content_type }}, {{ file.file_size }} bytes)</span>
+            {% if file.is_late %}
+            <div class="text-xs text-amber-700 mt-1">Late submission</div>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>

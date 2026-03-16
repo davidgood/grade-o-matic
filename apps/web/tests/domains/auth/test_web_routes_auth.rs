@@ -8,12 +8,13 @@ use axum::{
         header::{AUTHORIZATION, CONTENT_TYPE, COOKIE, LOCATION, SET_COOKIE},
     },
 };
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use grade_o_matic_web::{
     common::error::AppError,
     common::jwt::{self, AuthBody, AuthPayload},
     domains::assignments::{
-        AssignmentAttachment, AssignmentServiceTrait, StudentAssignmentSubmission,
+        AssignmentAttachment, AssignmentDeadlineType, AssignmentServiceTrait,
+        StudentAssignmentSubmission,
         dto::assignment_dto::{AssignmentDto, AssignmentWithAttachmentCountDto},
     },
     domains::auth::AuthServiceTrait,
@@ -88,6 +89,10 @@ fn ta_user_id() -> Uuid {
 
 fn student_assignment_id() -> Uuid {
     Uuid::parse_str("dddddddd-dddd-dddd-dddd-dddddddddddd").expect("valid uuid")
+}
+
+fn hard_cutoff_assignment_id() -> Uuid {
+    Uuid::parse_str("dededede-dede-dede-dede-dededededede").expect("valid uuid")
 }
 
 fn second_submission_file_id() -> Uuid {
@@ -306,14 +311,26 @@ impl AssignmentServiceTrait for FakeAssignmentService {
 
     async fn list_by_class(&self, _class_id: Uuid) -> Result<Vec<AssignmentDto>, AppError> {
         if _class_id == enrolled_class_id() {
-            return Ok(vec![AssignmentDto {
-                id: student_assignment_id(),
-                class_id: enrolled_class_id(),
-                title: "Homework 1".to_string(),
-                description: Some("Ownership and borrowing".to_string()),
-                due_at: None,
-                points: Some(100),
-            }]);
+            return Ok(vec![
+                AssignmentDto {
+                    id: student_assignment_id(),
+                    class_id: enrolled_class_id(),
+                    title: "Homework 1".to_string(),
+                    description: Some("Ownership and borrowing".to_string()),
+                    due_at: None,
+                    deadline_type: AssignmentDeadlineType::SoftDeadline,
+                    points: Some(100),
+                },
+                AssignmentDto {
+                    id: hard_cutoff_assignment_id(),
+                    class_id: enrolled_class_id(),
+                    title: "Locked Homework".to_string(),
+                    description: Some("Deadline has passed".to_string()),
+                    due_at: Some(Utc::now() - Duration::minutes(10)),
+                    deadline_type: AssignmentDeadlineType::HardCutoff,
+                    points: Some(50),
+                },
+            ]);
         }
 
         if _class_id == other_class_id() {
@@ -323,6 +340,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Hidden Homework".to_string(),
                 description: Some("Should never be visible to this student".to_string()),
                 due_at: None,
+                deadline_type: AssignmentDeadlineType::SoftDeadline,
                 points: Some(50),
             }]);
         }
@@ -341,6 +359,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Midterm Project".to_string(),
                 description: Some("Build a service".to_string()),
                 due_at: None,
+                deadline_type: AssignmentDeadlineType::HardCutoff,
                 points: Some(200),
                 attachment_count: 0,
             }]);
@@ -386,6 +405,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                     file_size: 2048,
                     submitted_by: enrolled_student_id(),
                     submitted_at: Utc::now(),
+                    deadline_type: AssignmentDeadlineType::SoftDeadline,
+                    is_late: true,
                     grading_status: Some("completed".to_string()),
                     grading_completed_at: Some(Utc::now()),
                 },
@@ -400,6 +421,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                     file_size: 1024,
                     submitted_by: enrolled_student_id(),
                     submitted_at: Utc::now(),
+                    deadline_type: AssignmentDeadlineType::SoftDeadline,
+                    is_late: false,
                     grading_status: Some("failed".to_string()),
                     grading_completed_at: None,
                 },
@@ -430,7 +453,19 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Homework 1".to_string(),
                 description: Some("Ownership and borrowing".to_string()),
                 due_at: None,
+                deadline_type: AssignmentDeadlineType::SoftDeadline,
                 points: Some(100),
+            }));
+        }
+        if _id == hard_cutoff_assignment_id() {
+            return Ok(Some(AssignmentDto {
+                id: hard_cutoff_assignment_id(),
+                class_id: enrolled_class_id(),
+                title: "Locked Homework".to_string(),
+                description: Some("Deadline has passed".to_string()),
+                due_at: Some(Utc::now() - Duration::minutes(10)),
+                deadline_type: AssignmentDeadlineType::HardCutoff,
+                points: Some(50),
             }));
         }
         if _id == instructor_assignment_id() {
@@ -440,6 +475,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Midterm Project".to_string(),
                 description: Some("Build a service".to_string()),
                 due_at: None,
+                deadline_type: AssignmentDeadlineType::HardCutoff,
                 points: Some(200),
             }));
         }
@@ -463,6 +499,7 @@ impl AssignmentServiceTrait for FakeAssignmentService {
             title: _assignment.title,
             description: _assignment.description,
             due_at: _assignment.due_at,
+            deadline_type: _assignment.deadline_type,
             points: _assignment.points,
         })
     }
@@ -576,6 +613,7 @@ impl ClassServiceTrait for FakeClassService {
                     assignment_title: Some("Midterm Project".to_string()),
                     assignment_description: Some("Build a service".to_string()),
                     due_at: None,
+                    deadline_type: Some(AssignmentDeadlineType::HardCutoff),
                     points: Some(200),
                 },
             ]);
@@ -1465,7 +1503,7 @@ async fn edit_assignment_submit_happy_path_redirects_to_class() {
         .expect("token should be created");
 
     let body = format!(
-        "title=Updated%20Project&description=Updated%20desc&due_at=2026-03-31T23:59&points=123&authenticity_token={encoded_token}"
+        "title=Updated%20Project&description=Updated%20desc&due_at=2026-03-31T23:59&deadline_type=hard_cutoff&points=123&authenticity_token={encoded_token}"
     );
     let req = Request::builder()
         .method(Method::POST)
@@ -1498,7 +1536,7 @@ async fn edit_assignment_submit_rejects_invalid_due_date() {
         .expect("token should be created");
 
     let body = format!(
-        "title=Updated%20Project&description=Updated%20desc&due_at=bad-date&points=123&authenticity_token={encoded_token}"
+        "title=Updated%20Project&description=Updated%20desc&due_at=bad-date&deadline_type=soft_deadline&points=123&authenticity_token={encoded_token}"
     );
     let req = Request::builder()
         .method(Method::POST)
@@ -1511,6 +1549,43 @@ async fn edit_assignment_submit_rejects_invalid_due_date() {
 
     let response = app.oneshot(req).await.expect("response should return");
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn students_assignment_submit_rejects_past_hard_cutoff() {
+    ensure_jwt_env();
+    let app = create_test_router();
+    let (csrf_cookie, authenticity_token) = get_csrf_cookie_and_token(&app).await;
+
+    let token = jwt::make_jwt_token(&enrolled_student_id(), UserRole::Student)
+        .expect("token should be created");
+
+    let boundary = "X-BOUNDARY-HARD-CUTOFF";
+    let body = build_multipart_form(
+        &[
+            ("authenticity_token", &authenticity_token),
+            ("code_submission", "fn main() {}"),
+        ],
+        boundary,
+    );
+
+    let req = Request::builder()
+        .method(Method::POST)
+        .uri("/ui/students/assignments/dededede-dede-dede-dede-dededededede/submit")
+        .header(AUTHORIZATION, format!("Bearer {token}"))
+        .header(COOKIE, csrf_cookie)
+        .header(
+            CONTENT_TYPE,
+            format!("multipart/form-data; boundary={boundary}"),
+        )
+        .body(Body::from(body))
+        .expect("request should build");
+
+    let response = app.oneshot(req).await.expect("response should return");
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let html = body_to_string(response.into_body()).await;
+    assert!(html.contains("hard cutoff deadline has passed"));
 }
 
 #[tokio::test]
