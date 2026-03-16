@@ -138,3 +138,4 @@ apps/web/Cargo.lock
 /apps/web/.sass-cache/
 
 apps/web/assets/private/document/**
+/.sass-cache/
