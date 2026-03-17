@@ -3,7 +3,8 @@ use crate::domains::assignments::domain::model::{
     AssignmentAttachment, StudentAssignmentSubmission,
 };
 use crate::domains::assignments::dto::assignment_dto::{
-    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
+    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto,
+    StudentAssignmentExtensionDto, UpdateAssignmentDto, UpsertStudentAssignmentExtensionDto,
 };
 
 use async_trait::async_trait;
@@ -18,6 +19,11 @@ pub trait AssignmentServiceTrait: Send + Sync {
 
     async fn list(&self) -> Result<Vec<AssignmentDto>, AppError>;
     async fn list_by_class(&self, class_id: uuid::Uuid) -> Result<Vec<AssignmentDto>, AppError>;
+    async fn list_by_class_for_student(
+        &self,
+        class_id: uuid::Uuid,
+        student_id: uuid::Uuid,
+    ) -> Result<Vec<AssignmentDto>, AppError>;
 
     async fn list_by_class_with_attachment_count(
         &self,
@@ -33,6 +39,19 @@ pub trait AssignmentServiceTrait: Send + Sync {
         assignment_id: uuid::Uuid,
         student_id: uuid::Uuid,
     ) -> Result<Vec<StudentAssignmentSubmission>, AppError>;
+    async fn list_student_extensions(
+        &self,
+        assignment_id: uuid::Uuid,
+    ) -> Result<Vec<StudentAssignmentExtensionDto>, AppError>;
+    async fn upsert_student_extension(
+        &self,
+        extension: UpsertStudentAssignmentExtensionDto,
+    ) -> Result<StudentAssignmentExtensionDto, AppError>;
+    async fn delete_student_extension(
+        &self,
+        assignment_id: uuid::Uuid,
+        student_id: uuid::Uuid,
+    ) -> Result<bool, AppError>;
     async fn attach_file(
         &self,
         assignment_id: uuid::Uuid,
@@ -46,6 +65,11 @@ pub trait AssignmentServiceTrait: Send + Sync {
     ) -> Result<bool, AppError>;
 
     async fn find_by_id(&self, id: uuid::Uuid) -> Result<Option<AssignmentDto>, AppError>;
+    async fn find_by_id_for_student(
+        &self,
+        id: uuid::Uuid,
+        student_id: uuid::Uuid,
+    ) -> Result<Option<AssignmentDto>, AppError>;
 
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<AssignmentDto, AppError>;
 

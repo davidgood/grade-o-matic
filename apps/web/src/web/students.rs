@@ -87,6 +87,8 @@ struct StudentAssignmentRow {
     title: String,
     description: Option<String>,
     due_at: Option<chrono::DateTime<chrono::Utc>>,
+    extension_due_at: Option<chrono::DateTime<chrono::Utc>>,
+    effective_due_at: Option<chrono::DateTime<chrono::Utc>>,
     deadline_type: AssignmentDeadlineType,
     points: Option<i16>,
 }
@@ -111,7 +113,9 @@ pub async fn students_assignments_page(
             None => continue,
         };
 
-        let assignments = assignment_service.list_by_class(class.id).await?;
+        let assignments = assignment_service
+            .list_by_class_for_student(class.id, claims.sub)
+            .await?;
         for assignment in assignments {
             rows.push(StudentAssignmentRow {
                 id: assignment.id,
@@ -119,6 +123,8 @@ pub async fn students_assignments_page(
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                extension_due_at: assignment.extension_due_at,
+                effective_due_at: assignment.effective_due_at,
                 deadline_type: assignment.deadline_type,
                 points: assignment.points,
             });
@@ -172,7 +178,7 @@ async fn get_student_assignment_context(
     AppError,
 > {
     let assignment = assignment_service
-        .find_by_id(assignment_id)
+        .find_by_id_for_student(assignment_id, claims.sub)
         .await?
         .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
 
@@ -188,6 +194,7 @@ async fn get_student_assignment_context(
         return Err(AppError::Forbidden);
     }
 
+    let effective_due_at = assignment.effective_due_at.or(assignment.due_at);
     let submission_files = assignment_service
         .list_attachments(assignment_id)
         .await?
@@ -202,9 +209,7 @@ async fn get_student_assignment_context(
             is_late: matches!(
                 assignment.deadline_type,
                 AssignmentDeadlineType::SoftDeadline
-            ) && assignment
-                .due_at
-                .is_some_and(|due_at| a.created_at > due_at),
+            ) && effective_due_at.is_some_and(|due_at| a.created_at > due_at),
         })
         .collect::<Vec<_>>();
 
@@ -313,8 +318,9 @@ pub async fn submit_student_assignment(
         return Ok((StatusCode::BAD_REQUEST, token, Html(html)).into_response());
     }
 
+    let effective_due_at = assignment.effective_due_at.or(assignment.due_at);
     if matches!(assignment.deadline_type, AssignmentDeadlineType::HardCutoff)
-        && assignment.due_at.is_some_and(|due_at| Utc::now() > due_at)
+        && effective_due_at.is_some_and(|due_at| Utc::now() > due_at)
     {
         let html = render_template(
             "assignments/student_detail.html",

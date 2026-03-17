@@ -35,9 +35,17 @@
                 <td class="px-4 py-2 text-slate-700">{{ assignment.title }}</td>
                 <td class="px-4 py-2 text-slate-700">{{ assignment.description or "-" }}</td>
                 <td class="px-4 py-2 text-slate-700">
-                    {% if assignment.due_at %}
-                    {{ assignment.due_at|format_datetime_display }}
+                    {% if assignment.effective_due_at or assignment.due_at %}
+                    {{ (assignment.effective_due_at or assignment.due_at)|format_datetime_display }}
                     <div class="text-xs text-slate-500 mt-1">{{ assignment.deadline_type|format_deadline_type }}</div>
+                    {% if assignment.extension_due_at %}
+                    <div class="text-xs text-emerald-700 mt-1">
+                        Extension applied
+                        {% if assignment.due_at %}
+                        · default {{ assignment.due_at|format_datetime_display }}
+                        {% endif %}
+                    </div>
+                    {% endif %}
                     {% else %}
                     -
                     {% endif %}

@@ -9,7 +9,8 @@ use grade_o_matic_web::common::dto::RestApiResponse;
 use grade_o_matic_web::common::error::AppError;
 use grade_o_matic_web::common::jwt::Claims;
 use grade_o_matic_web::domains::assignments::dto::assignment_dto::{
-    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
+    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto,
+    StudentAssignmentExtensionDto, UpdateAssignmentDto, UpsertStudentAssignmentExtensionDto,
 };
 use grade_o_matic_web::domains::assignments::{
     AssignmentAttachment, AssignmentDeadlineType, AssignmentServiceTrait,
@@ -49,6 +50,8 @@ impl FakeAssignmentService {
             title: "Seed Assignment".to_string(),
             description: Some("This is a seed assignment for testing purposes.".to_string()),
             due_at: Some(Utc::now()),
+            extension_due_at: None,
+            effective_due_at: Some(Utc::now()),
             deadline_type: AssignmentDeadlineType::SoftDeadline,
             points: Some(100),
         };
@@ -81,6 +84,14 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(store.assignments.values().cloned().collect())
     }
 
+    async fn list_by_class_for_student(
+        &self,
+        _class_id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<Vec<AssignmentDto>, AppError> {
+        self.list_by_class(_class_id).await
+    }
+
     async fn list_by_class_with_attachment_count(
         &self,
         _class_id: Uuid,
@@ -96,6 +107,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                extension_due_at: assignment.extension_due_at,
+                effective_due_at: assignment.effective_due_at,
                 deadline_type: assignment.deadline_type,
                 points: assignment.points,
                 attachment_count: 0,
@@ -116,6 +129,28 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         _student_id: Uuid,
     ) -> Result<Vec<StudentAssignmentSubmission>, AppError> {
         Ok(vec![])
+    }
+
+    async fn list_student_extensions(
+        &self,
+        _assignment_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentExtensionDto>, AppError> {
+        Ok(vec![])
+    }
+
+    async fn upsert_student_extension(
+        &self,
+        _extension: UpsertStudentAssignmentExtensionDto,
+    ) -> Result<StudentAssignmentExtensionDto, AppError> {
+        Err(AppError::InternalError)
+    }
+
+    async fn delete_student_extension(
+        &self,
+        _assignment_id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<bool, AppError> {
+        Ok(true)
     }
 
     async fn attach_file(
@@ -139,6 +174,14 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         }
     }
 
+    async fn find_by_id_for_student(
+        &self,
+        id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<Option<AssignmentDto>, AppError> {
+        self.find_by_id(id).await
+    }
+
     async fn create(&self, assignment: CreateAssignmentDto) -> Result<AssignmentDto, AppError> {
         let id = Uuid::new_v4();
 
@@ -148,6 +191,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
+            extension_due_at: None,
+            effective_due_at: assignment.due_at,
             deadline_type: assignment.deadline_type,
             points: None,
         };

@@ -15,6 +15,39 @@
 </header>
 
 <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+    <div class="grid gap-3 md:grid-cols-3">
+        <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Default Due</dt>
+            <dd class="text-slate-800">
+                {% if default_due_at %}
+                {{ default_due_at|format_datetime_display }}
+                {% else %}
+                -
+                {% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Extension</dt>
+            <dd class="text-slate-800">
+                {% if extension_due_at %}
+                {{ extension_due_at|format_datetime_display }}
+                {% else %}
+                -
+                {% endif %}
+            </dd>
+        </div>
+        <div>
+            <dt class="text-xs uppercase tracking-wide text-slate-500">Effective Due</dt>
+            <dd class="text-slate-800">
+                {% if effective_due_at %}
+                {{ effective_due_at|format_datetime_display }}
+                {% else %}
+                -
+                {% endif %}
+            </dd>
+        </div>
+    </div>
+
     <div class="flex items-center justify-between gap-3">
         <h2 class="text-xl font-semibold">Attempts</h2>
         <span class="text-sm text-slate-500">{{ submissions|length }} total</span>
