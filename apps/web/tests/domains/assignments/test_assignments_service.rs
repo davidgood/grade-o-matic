@@ -7,8 +7,10 @@ use grade_o_matic_web::{
     domains::assignments::{
         Assignment, AssignmentAttachment, AssignmentDeadlineType, AssignmentRepositoryTrait,
         AssignmentService, AssignmentServiceTrait, AssignmentWithAttachmentCount,
-        StudentAssignmentSubmission, create_assignment_service,
-        dto::assignment_dto::{CreateAssignmentDto, UpdateAssignmentDto},
+        StudentAssignmentExtension, StudentAssignmentSubmission, create_assignment_service,
+        dto::assignment_dto::{
+            CreateAssignmentDto, UpdateAssignmentDto, UpsertStudentAssignmentExtensionDto,
+        },
     },
 };
 use sqlx::{Error, PgPool};
@@ -21,10 +23,12 @@ struct FakeAssignmentRepository {
     fail_find_all: bool,
     fail_find_by_class_id: bool,
     fail_find_by_class_id_with_count: bool,
+    student_extensions: Mutex<HashMap<(Uuid, Uuid), StudentAssignmentExtension>>,
     list_attachments_result: Vec<AssignmentAttachment>,
     list_student_submission_history_result: Vec<StudentAssignmentSubmission>,
     fail_list_attachments: bool,
     fail_list_student_submission_history: bool,
+    fail_student_extension_ops: bool,
     fail_add_attachment: bool,
     fail_remove_attachment: bool,
     remove_attachment_result: bool,
@@ -65,6 +69,22 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             .collect())
     }
 
+    async fn find_by_class_id_for_student(
+        &self,
+        class_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<Assignment>, sqlx::Error> {
+        let mut assignments = self.find_by_class_id(class_id).await?;
+        let extensions = self.student_extensions.lock().await;
+        for assignment in &mut assignments {
+            if let Some(extension) = extensions.get(&(assignment.id, student_id)) {
+                assignment.extension_due_at = Some(extension.due_at);
+                assignment.effective_due_at = Some(extension.due_at);
+            }
+        }
+        Ok(assignments)
+    }
+
     async fn find_by_class_id_with_attachment_count(
         &self,
         class_id: Uuid,
@@ -83,6 +103,8 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
                 title: assignment.title,
                 description: assignment.description,
                 due_at: assignment.due_at,
+                extension_due_at: assignment.extension_due_at,
+                effective_due_at: assignment.effective_due_at,
                 deadline_type: assignment.deadline_type,
                 points: assignment.points,
                 created_by: assignment.created_by,
@@ -100,6 +122,22 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
         }
         let store = self.store.lock().await;
         Ok(store.get(&id).cloned())
+    }
+
+    async fn find_by_id_for_student(
+        &self,
+        id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Option<Assignment>, sqlx::Error> {
+        let mut assignment = self.find_by_id(id).await?;
+        let extensions = self.student_extensions.lock().await;
+        if let Some(assignment_value) = &mut assignment
+            && let Some(extension) = extensions.get(&(id, student_id))
+        {
+            assignment_value.extension_due_at = Some(extension.due_at);
+            assignment_value.effective_due_at = Some(extension.due_at);
+        }
+        Ok(assignment)
     }
 
     async fn list_attachments(
@@ -121,6 +159,58 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             return Err(sqlx::Error::RowNotFound);
         }
         Ok(self.list_student_submission_history_result.clone())
+    }
+
+    async fn list_student_extensions(
+        &self,
+        assignment_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentExtension>, sqlx::Error> {
+        if self.fail_student_extension_ops {
+            return Err(sqlx::Error::RowNotFound);
+        }
+        let extensions = self.student_extensions.lock().await;
+        Ok(extensions
+            .values()
+            .filter(|extension| extension.assignment_id == assignment_id)
+            .cloned()
+            .collect())
+    }
+
+    async fn upsert_student_extension(
+        &self,
+        extension: UpsertStudentAssignmentExtensionDto,
+    ) -> Result<StudentAssignmentExtension, sqlx::Error> {
+        if self.fail_student_extension_ops {
+            return Err(sqlx::Error::RowNotFound);
+        }
+        let now = Utc::now();
+        let entity = StudentAssignmentExtension {
+            assignment_id: extension.assignment_id,
+            student_id: extension.student_id,
+            due_at: extension.due_at,
+            created_by: Some(extension.modified_by),
+            created_at: now,
+            modified_by: Some(extension.modified_by),
+            modified_at: now,
+        };
+        let mut extensions = self.student_extensions.lock().await;
+        extensions.insert(
+            (extension.assignment_id, extension.student_id),
+            entity.clone(),
+        );
+        Ok(entity)
+    }
+
+    async fn delete_student_extension(
+        &self,
+        assignment_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<bool, sqlx::Error> {
+        if self.fail_student_extension_ops {
+            return Err(sqlx::Error::RowNotFound);
+        }
+        let mut extensions = self.student_extensions.lock().await;
+        Ok(extensions.remove(&(assignment_id, student_id)).is_some())
     }
 
     async fn add_attachment(
@@ -158,6 +248,8 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
             title: assignment.title,
             description: assignment.description,
             due_at: assignment.due_at,
+            extension_due_at: None,
+            effective_due_at: assignment.due_at,
             deadline_type: assignment.deadline_type,
             points: Some(100),
             created_by: Some(assignment.modified_by),
@@ -190,6 +282,7 @@ impl AssignmentRepositoryTrait for FakeAssignmentRepository {
         existing.title = assignment.title;
         existing.description = assignment.description;
         existing.due_at = assignment.due_at;
+        existing.effective_due_at = assignment.due_at;
         existing.deadline_type = assignment.deadline_type;
         existing.modified_by = Some(assignment.modified_by);
         existing.modified_at = Some(Utc::now());
@@ -217,6 +310,8 @@ fn seed_assignment(id: Uuid) -> Assignment {
         title: "assignment-1".to_string(),
         description: Some("description".to_string()),
         due_at: Some(Utc::now()),
+        extension_due_at: None,
+        effective_due_at: Some(Utc::now()),
         deadline_type: AssignmentDeadlineType::SoftDeadline,
         points: Some(100),
         created_by: Some(user_id),
@@ -259,6 +354,43 @@ async fn get_by_id_returns_not_found_error_when_missing() {
         .expect_err("missing assignment should error");
 
     assert!(matches!(err, AppError::NotFound(_)));
+}
+
+#[tokio::test]
+async fn find_by_id_for_student_returns_extension_when_present() {
+    let assignment_id = Uuid::new_v4();
+    let student_id = Uuid::new_v4();
+    let extension_due_at = Utc::now() + chrono::Duration::days(1);
+    let mut map = HashMap::new();
+    map.insert(assignment_id, seed_assignment(assignment_id));
+    let mut extensions = HashMap::new();
+    extensions.insert(
+        (assignment_id, student_id),
+        StudentAssignmentExtension {
+            assignment_id,
+            student_id,
+            due_at: extension_due_at,
+            created_by: Some(student_id),
+            created_at: Utc::now(),
+            modified_by: Some(student_id),
+            modified_at: Utc::now(),
+        },
+    );
+    let repo = FakeAssignmentRepository {
+        store: Mutex::new(map),
+        student_extensions: Mutex::new(extensions),
+        ..Default::default()
+    };
+    let service = build_service_with_repo(repo);
+
+    let assignment = service
+        .find_by_id_for_student(assignment_id, student_id)
+        .await
+        .expect("student lookup should succeed")
+        .expect("assignment should exist");
+
+    assert_eq!(assignment.extension_due_at, Some(extension_due_at));
+    assert_eq!(assignment.effective_due_at, Some(extension_due_at));
 }
 
 #[tokio::test]

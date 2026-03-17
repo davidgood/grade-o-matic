@@ -84,8 +84,8 @@
     {% if assignment and roster_members and roster_members|length > 0 %}
     <section class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
         <header class="mb-3 space-y-1">
-            <h2 class="text-xl font-semibold">Student Submission History</h2>
-            <p class="text-sm text-slate-600">Open a student-specific history view for this assignment.</p>
+            <h2 class="text-xl font-semibold">Student Extensions</h2>
+            <p class="text-sm text-slate-600">Override the assignment due date for individual students without changing the class default.</p>
         </header>
         <div class="table-frame rounded-lg border border-slate-200 bg-white">
             <table class="min-w-full divide-y divide-slate-200 text-sm">
@@ -93,6 +93,8 @@
                 <tr>
                     <th class="px-4 py-2 text-left font-medium text-slate-600">Student</th>
                     <th class="px-4 py-2 text-left font-medium text-slate-600">Email</th>
+                    <th class="px-4 py-2 text-left font-medium text-slate-600">Effective Due</th>
+                    <th class="px-4 py-2 text-left font-medium text-slate-600">Student Extension</th>
                     <th class="px-4 py-2 text-right font-medium text-slate-600">Actions</th>
                 </tr>
                 </thead>
@@ -101,7 +103,39 @@
                 <tr>
                     <td class="px-4 py-2 font-medium text-slate-900">{{ member.username }}</td>
                     <td class="px-4 py-2 text-slate-700">{{ member.email or "-" }}</td>
+                    <td class="px-4 py-2 text-slate-700">
+                        {% if member.effective_due_at %}
+                        {{ member.effective_due_at|format_datetime_display }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-2 text-slate-700">
+                        <form method="post"
+                              action="/ui/instructors/assignments/{{ assignment.id }}/students/{{ member.user_id }}/extension"
+                              class="flex flex-wrap items-end gap-2">
+                            <input type="hidden" name="authenticity_token" value="{{ authenticity_token|safe }}"/>
+                            <input type="datetime-local"
+                                   name="due_at"
+                                   value="{% if member.extension_due_at %}{{ member.extension_due_at|format_datetime_local }}{% endif %}"
+                                   class="auth-input min-w-56"/>
+                            <button type="submit" class="rounded-md border border-slate-300 px-3 py-2 text-xs font-medium hover:bg-slate-100">
+                                Save Extension
+                            </button>
+                        </form>
+                    </td>
                     <td class="px-4 py-2 text-right">
+                        {% if member.extension_due_at %}
+                        <form method="post"
+                              action="/ui/instructors/assignments/{{ assignment.id }}/students/{{ member.user_id }}/extension/delete"
+                              class="inline">
+                            <input type="hidden" name="authenticity_token" value="{{ authenticity_token|safe }}"/>
+                            <button type="submit"
+                                    class="rounded-md border border-rose-300 px-3 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50">
+                                Remove Extension
+                            </button>
+                        </form>
+                        {% endif %}
                         <a class="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100"
                            href="/ui/instructors/assignments/{{ assignment.id }}/students/{{ member.user_id }}/submissions">
                             View History

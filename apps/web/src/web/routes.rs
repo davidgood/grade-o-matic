@@ -22,10 +22,11 @@ use super::{
     },
     htmx::assignments::assignments_table_fragment,
     instructors::{
-        add_student_to_roster, create_class_page, create_class_submit, edit_assignment_page,
-        edit_assignment_submit, edit_class_page, edit_class_submit, instructor_class_detail_page,
+        add_student_to_roster, create_class_page, create_class_submit,
+        delete_student_assignment_extension, edit_assignment_page, edit_assignment_submit,
+        edit_class_page, edit_class_submit, instructor_class_detail_page,
         instructor_student_submission_history_page, instructors_page, remove_student_from_roster,
-        upload_assignment_attachments,
+        upload_assignment_attachments, upsert_student_assignment_extension,
     },
     students::{
         student_assignment_detail_page, students_assignments_page, students_classes_page,
@@ -93,6 +94,14 @@ where
         .route(
             "/ui/instructors/assignments/{id}/attachments",
             post(upload_assignment_attachments),
+        )
+        .route(
+            "/ui/instructors/assignments/{assignment_id}/students/{student_id}/extension",
+            post(upsert_student_assignment_extension),
+        )
+        .route(
+            "/ui/instructors/assignments/{assignment_id}/students/{student_id}/extension/delete",
+            post(delete_student_assignment_extension),
         )
         .route(
             "/ui/instructors/assignments/{assignment_id}/students/{student_id}/submissions",

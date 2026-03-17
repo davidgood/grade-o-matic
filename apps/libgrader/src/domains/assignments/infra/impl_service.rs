@@ -7,7 +7,8 @@ use crate::domains::assignments::domain::{
     service::AssignmentServiceTrait,
 };
 use crate::domains::assignments::dto::assignment_dto::{
-    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto, UpdateAssignmentDto,
+    AssignmentDto, AssignmentWithAttachmentCountDto, CreateAssignmentDto,
+    StudentAssignmentExtensionDto, UpdateAssignmentDto, UpsertStudentAssignmentExtensionDto,
 };
 use async_trait::async_trait;
 use sqlx::PgPool;
@@ -66,6 +67,24 @@ where
         }
     }
 
+    async fn list_by_class_for_student(
+        &self,
+        class_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<AssignmentDto>, AppError> {
+        match self
+            .repository
+            .find_by_class_id_for_student(class_id, student_id)
+            .await
+        {
+            Ok(assignments) => Ok(assignments.into_iter().map(Into::into).collect()),
+            Err(err) => {
+                tracing::error!("Error fetching assignments by class for student: {err}");
+                Err(AppError::DatabaseError(err))
+            }
+        }
+    }
+
     async fn list_by_class_with_attachment_count(
         &self,
         class_id: Uuid,
@@ -114,6 +133,48 @@ where
             })
     }
 
+    async fn list_student_extensions(
+        &self,
+        assignment_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentExtensionDto>, AppError> {
+        self.repository
+            .list_student_extensions(assignment_id)
+            .await
+            .map(|rows| rows.into_iter().map(Into::into).collect())
+            .map_err(|err| {
+                tracing::error!("Error fetching student assignment extensions: {err}");
+                AppError::DatabaseError(err)
+            })
+    }
+
+    async fn upsert_student_extension(
+        &self,
+        extension: UpsertStudentAssignmentExtensionDto,
+    ) -> Result<StudentAssignmentExtensionDto, AppError> {
+        self.repository
+            .upsert_student_extension(extension)
+            .await
+            .map(Into::into)
+            .map_err(|err| {
+                tracing::error!("Error saving student assignment extension: {err}");
+                AppError::DatabaseError(err)
+            })
+    }
+
+    async fn delete_student_extension(
+        &self,
+        assignment_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<bool, AppError> {
+        self.repository
+            .delete_student_extension(assignment_id, student_id)
+            .await
+            .map_err(|err| {
+                tracing::error!("Error deleting student assignment extension: {err}");
+                AppError::DatabaseError(err)
+            })
+    }
+
     async fn attach_file(
         &self,
         assignment_id: Uuid,
@@ -145,6 +206,21 @@ where
             Ok(None) => Err(AppError::NotFound("Assignment not found".into())),
             Err(err) => {
                 tracing::error!("Error retrieving assignment: {err}");
+                Err(AppError::DatabaseError(err))
+            }
+        }
+    }
+
+    async fn find_by_id_for_student(
+        &self,
+        id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Option<AssignmentDto>, AppError> {
+        match self.repository.find_by_id_for_student(id, student_id).await {
+            Ok(Some(assignment)) => Ok(Some(AssignmentDto::from(assignment))),
+            Ok(None) => Err(AppError::NotFound("Assignment not found".into())),
+            Err(err) => {
+                tracing::error!("Error retrieving assignment for student: {err}");
                 Err(AppError::DatabaseError(err))
             }
         }

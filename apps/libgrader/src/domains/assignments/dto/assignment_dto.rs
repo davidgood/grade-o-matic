@@ -1,5 +1,5 @@
 use crate::domains::assignments::domain::model::{
-    Assignment, AssignmentDeadlineType, AssignmentWithAttachmentCount,
+    Assignment, AssignmentDeadlineType, AssignmentWithAttachmentCount, StudentAssignmentExtension,
 };
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -16,6 +16,10 @@ pub struct AssignmentDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub extension_due_at: Option<DateTime<Utc>>,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub effective_due_at: Option<DateTime<Utc>>,
     pub deadline_type: AssignmentDeadlineType,
     pub points: Option<i16>,
 }
@@ -54,7 +58,28 @@ pub struct AssignmentWithAttachmentCountDto {
     pub description: Option<String>,
     #[serde(with = "crate::common::ts_format::option")]
     pub due_at: Option<DateTime<Utc>>,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub extension_due_at: Option<DateTime<Utc>>,
+    #[serde(with = "crate::common::ts_format::option")]
+    pub effective_due_at: Option<DateTime<Utc>>,
     pub deadline_type: AssignmentDeadlineType,
     pub points: Option<i16>,
     pub attachment_count: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, DtoFrom)]
+#[dto(from = StudentAssignmentExtension)]
+pub struct StudentAssignmentExtensionDto {
+    pub assignment_id: uuid::Uuid,
+    pub student_id: uuid::Uuid,
+    #[serde(with = "crate::common::ts_format")]
+    pub due_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, Validate)]
+pub struct UpsertStudentAssignmentExtensionDto {
+    pub assignment_id: uuid::Uuid,
+    pub student_id: uuid::Uuid,
+    pub due_at: DateTime<Utc>,
+    pub modified_by: uuid::Uuid,
 }

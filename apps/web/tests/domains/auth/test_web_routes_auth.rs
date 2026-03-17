@@ -15,7 +15,10 @@ use grade_o_matic_web::{
     domains::assignments::{
         AssignmentAttachment, AssignmentDeadlineType, AssignmentServiceTrait,
         StudentAssignmentSubmission,
-        dto::assignment_dto::{AssignmentDto, AssignmentWithAttachmentCountDto},
+        dto::assignment_dto::{
+            AssignmentDto, AssignmentWithAttachmentCountDto, StudentAssignmentExtensionDto,
+            UpsertStudentAssignmentExtensionDto,
+        },
     },
     domains::auth::AuthServiceTrait,
     domains::auth::dto::auth_dto::AuthUserDto,
@@ -318,6 +321,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                     title: "Homework 1".to_string(),
                     description: Some("Ownership and borrowing".to_string()),
                     due_at: None,
+                    extension_due_at: None,
+                    effective_due_at: None,
                     deadline_type: AssignmentDeadlineType::SoftDeadline,
                     points: Some(100),
                 },
@@ -327,6 +332,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                     title: "Locked Homework".to_string(),
                     description: Some("Deadline has passed".to_string()),
                     due_at: Some(Utc::now() - Duration::minutes(10)),
+                    extension_due_at: None,
+                    effective_due_at: Some(Utc::now() - Duration::minutes(10)),
                     deadline_type: AssignmentDeadlineType::HardCutoff,
                     points: Some(50),
                 },
@@ -340,12 +347,32 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Hidden Homework".to_string(),
                 description: Some("Should never be visible to this student".to_string()),
                 due_at: None,
+                extension_due_at: None,
+                effective_due_at: None,
                 deadline_type: AssignmentDeadlineType::SoftDeadline,
                 points: Some(50),
             }]);
         }
 
         Ok(vec![])
+    }
+
+    async fn list_by_class_for_student(
+        &self,
+        class_id: Uuid,
+        student_id: Uuid,
+    ) -> Result<Vec<AssignmentDto>, AppError> {
+        let mut assignments = self.list_by_class(class_id).await?;
+        if student_id == enrolled_student_id() {
+            for assignment in &mut assignments {
+                if assignment.id == hard_cutoff_assignment_id() {
+                    let due_at = Utc::now() - Duration::minutes(10);
+                    assignment.due_at = Some(due_at);
+                    assignment.effective_due_at = Some(due_at);
+                }
+            }
+        }
+        Ok(assignments)
     }
 
     async fn list_by_class_with_attachment_count(
@@ -359,6 +386,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Midterm Project".to_string(),
                 description: Some("Build a service".to_string()),
                 due_at: None,
+                extension_due_at: None,
+                effective_due_at: None,
                 deadline_type: AssignmentDeadlineType::HardCutoff,
                 points: Some(200),
                 attachment_count: 0,
@@ -432,6 +461,39 @@ impl AssignmentServiceTrait for FakeAssignmentService {
         Ok(vec![])
     }
 
+    async fn list_student_extensions(
+        &self,
+        assignment_id: Uuid,
+    ) -> Result<Vec<StudentAssignmentExtensionDto>, AppError> {
+        if assignment_id == instructor_assignment_id() {
+            return Ok(vec![StudentAssignmentExtensionDto {
+                assignment_id,
+                student_id: enrolled_student_id(),
+                due_at: Utc::now() + Duration::days(2),
+            }]);
+        }
+        Ok(vec![])
+    }
+
+    async fn upsert_student_extension(
+        &self,
+        extension: UpsertStudentAssignmentExtensionDto,
+    ) -> Result<StudentAssignmentExtensionDto, AppError> {
+        Ok(StudentAssignmentExtensionDto {
+            assignment_id: extension.assignment_id,
+            student_id: extension.student_id,
+            due_at: extension.due_at,
+        })
+    }
+
+    async fn delete_student_extension(
+        &self,
+        _assignment_id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<bool, AppError> {
+        Ok(true)
+    }
+
     async fn attach_file(
         &self,
         _assignment_id: Uuid,
@@ -453,6 +515,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Homework 1".to_string(),
                 description: Some("Ownership and borrowing".to_string()),
                 due_at: None,
+                extension_due_at: None,
+                effective_due_at: None,
                 deadline_type: AssignmentDeadlineType::SoftDeadline,
                 points: Some(100),
             }));
@@ -464,6 +528,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Locked Homework".to_string(),
                 description: Some("Deadline has passed".to_string()),
                 due_at: Some(Utc::now() - Duration::minutes(10)),
+                extension_due_at: None,
+                effective_due_at: Some(Utc::now() - Duration::minutes(10)),
                 deadline_type: AssignmentDeadlineType::HardCutoff,
                 points: Some(50),
             }));
@@ -475,11 +541,21 @@ impl AssignmentServiceTrait for FakeAssignmentService {
                 title: "Midterm Project".to_string(),
                 description: Some("Build a service".to_string()),
                 due_at: None,
+                extension_due_at: None,
+                effective_due_at: None,
                 deadline_type: AssignmentDeadlineType::HardCutoff,
                 points: Some(200),
             }));
         }
         Ok(None)
+    }
+
+    async fn find_by_id_for_student(
+        &self,
+        id: Uuid,
+        _student_id: Uuid,
+    ) -> Result<Option<AssignmentDto>, AppError> {
+        self.find_by_id(id).await
     }
 
     async fn create(
@@ -499,6 +575,8 @@ impl AssignmentServiceTrait for FakeAssignmentService {
             title: _assignment.title,
             description: _assignment.description,
             due_at: _assignment.due_at,
+            extension_due_at: None,
+            effective_due_at: _assignment.due_at,
             deadline_type: _assignment.deadline_type,
             points: _assignment.points,
         })
@@ -1434,7 +1512,12 @@ async fn edit_assignment_page_happy_path_renders_form() {
     let html = body_to_string(response.into_body()).await;
     assert!(html.contains("Edit Assignment"));
     assert!(html.contains("Midterm Project"));
-    assert!(html.contains("Student Submission History"));
+    assert!(html.contains("Student Extensions"));
+    assert!(html.contains("Save Extension"));
+    assert!(
+        html.contains("/ui/instructors/assignments/77777777-7777-7777-7777-777777777777/students/")
+    );
+    assert!(html.contains("/extension"));
     assert!(html.contains("View History"));
 }
 

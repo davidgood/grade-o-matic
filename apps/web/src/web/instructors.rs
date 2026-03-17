@@ -15,7 +15,9 @@ use uuid::Uuid;
 use crate::common::error::AppError;
 use crate::common::jwt::Claims;
 use crate::common::multipart_helper::parse_multipart_to_maps;
-use crate::domains::assignments::dto::assignment_dto::UpdateAssignmentDto;
+use crate::domains::assignments::dto::assignment_dto::{
+    UpdateAssignmentDto, UpsertStudentAssignmentExtensionDto,
+};
 use crate::domains::assignments::{AssignmentDeadlineType, AssignmentServiceTrait};
 use crate::domains::class_memberships::{
     ClassMembershipRole, ClassMembershipServiceTrait,
@@ -53,6 +55,31 @@ where
     }
 }
 
+#[derive(Clone)]
+pub struct InstructorAssignmentEditDeps {
+    assignment_service: Arc<dyn AssignmentServiceTrait>,
+    class_service: Arc<dyn ClassServiceTrait>,
+    class_membership_service: Arc<dyn ClassMembershipServiceTrait>,
+    user_service: Arc<dyn UserServiceTrait>,
+}
+
+impl<S> FromRef<S> for InstructorAssignmentEditDeps
+where
+    Arc<dyn AssignmentServiceTrait>: FromRef<S>,
+    Arc<dyn ClassServiceTrait>: FromRef<S>,
+    Arc<dyn ClassMembershipServiceTrait>: FromRef<S>,
+    Arc<dyn UserServiceTrait>: FromRef<S>,
+{
+    fn from_ref(input: &S) -> Self {
+        Self {
+            assignment_service: Arc::<dyn AssignmentServiceTrait>::from_ref(input),
+            class_service: Arc::<dyn ClassServiceTrait>::from_ref(input),
+            class_membership_service: Arc::<dyn ClassMembershipServiceTrait>::from_ref(input),
+            user_service: Arc::<dyn UserServiceTrait>::from_ref(input),
+        }
+    }
+}
+
 #[derive(Debug, serde::Serialize)]
 struct InstructorStudentSubmissionRow {
     file_id: Uuid,
@@ -65,12 +92,60 @@ struct InstructorStudentSubmissionRow {
     grading_completed_at: Option<DateTime<Utc>>,
 }
 
+#[derive(Clone, Debug, serde::Serialize)]
+struct InstructorStudentExtensionRow {
+    user_id: Uuid,
+    username: String,
+    email: Option<String>,
+    extension_due_at: Option<DateTime<Utc>>,
+    effective_due_at: Option<DateTime<Utc>>,
+}
+
 fn parse_deadline_type(value: &str) -> Result<AssignmentDeadlineType, AppError> {
     match value {
         "hard_cutoff" => Ok(AssignmentDeadlineType::HardCutoff),
         "soft_deadline" => Ok(AssignmentDeadlineType::SoftDeadline),
         _ => Err(AppError::ValidationError("Invalid deadline type".into())),
     }
+}
+
+async fn build_assignment_extension_rows(
+    assignment_service: &Arc<dyn AssignmentServiceTrait>,
+    class_membership_service: &Arc<dyn ClassMembershipServiceTrait>,
+    user_service: &Arc<dyn UserServiceTrait>,
+    class_id: Uuid,
+    assignment_id: Uuid,
+    default_due_at: Option<DateTime<Utc>>,
+) -> Result<Vec<InstructorStudentExtensionRow>, AppError> {
+    let memberships = class_membership_service.list_by_class_id(class_id).await?;
+    let users = user_service.get_users().await?;
+    let user_by_id: HashMap<Uuid, _> = users.iter().map(|user| (user.id, user)).collect();
+    let extensions = assignment_service
+        .list_student_extensions(assignment_id)
+        .await?;
+    let extension_by_student = extensions
+        .into_iter()
+        .map(|extension| (extension.student_id, extension))
+        .collect::<HashMap<_, _>>();
+
+    Ok(memberships
+        .iter()
+        .filter(|membership| matches!(membership.role, ClassMembershipRole::Student))
+        .filter_map(|membership| {
+            user_by_id.get(&membership.user_id).map(|user| {
+                let extension_due_at = extension_by_student
+                    .get(&membership.user_id)
+                    .map(|extension| extension.due_at);
+                InstructorStudentExtensionRow {
+                    user_id: user.id,
+                    username: user.username.clone(),
+                    email: user.email.clone(),
+                    extension_due_at,
+                    effective_due_at: extension_due_at.or(default_due_at),
+                }
+            })
+        })
+        .collect())
 }
 
 pub async fn instructors_page(
@@ -546,22 +621,15 @@ pub async fn edit_assignment_page(
         return Err(AppError::Forbidden);
     }
 
-    let memberships = class_membership_service.list_by_class_id(class.id).await?;
-    let users = user_service.get_users().await?;
-    let user_by_id: HashMap<Uuid, _> = users.iter().map(|user| (user.id, user)).collect();
-    let roster_members = memberships
-        .iter()
-        .filter(|membership| matches!(membership.role, ClassMembershipRole::Student))
-        .filter_map(|membership| {
-            user_by_id.get(&membership.user_id).map(|user| {
-                context! {
-                    user_id => user.id,
-                    username => user.username.clone(),
-                    email => user.email.clone(),
-                }
-            })
-        })
-        .collect::<Vec<_>>();
+    let roster_members = build_assignment_extension_rows(
+        &assignment_service,
+        &class_membership_service,
+        &user_service,
+        class.id,
+        assignment_id,
+        assignment.due_at,
+    )
+    .await?;
 
     let authenticity_token = token
         .authenticity_token()
@@ -584,6 +652,7 @@ pub async fn edit_assignment_page(
             due_at_value => assignment.due_at,
             deadline_type_value => assignment.deadline_type,
             points_value => assignment.points,
+            default_due_at => assignment.due_at,
             authenticity_token => authenticity_token,
         },
     )?;
@@ -603,7 +672,7 @@ pub async fn instructor_student_submission_history_page(
     }
 
     let assignment = assignment_service
-        .find_by_id(assignment_id)
+        .find_by_id_for_student(assignment_id, student_id)
         .await?
         .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
 
@@ -657,6 +726,9 @@ pub async fn instructor_student_submission_history_page(
             assignment => assignment,
             student => student,
             submissions => submissions,
+            default_due_at => assignment.due_at,
+            effective_due_at => assignment.effective_due_at.or(assignment.due_at),
+            extension_due_at => assignment.extension_due_at,
         },
     )?;
     Ok(Html(html))
@@ -664,8 +736,7 @@ pub async fn instructor_student_submission_history_page(
 
 pub async fn edit_assignment_submit(
     Path(assignment_id): Path<Uuid>,
-    State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
-    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    State(deps): State<InstructorAssignmentEditDeps>,
     Extension(claims): Extension<Claims>,
     token: CsrfToken,
     Form(form): Form<EditAssignmentForm>,
@@ -678,12 +749,14 @@ pub async fn edit_assignment_submit(
         return Err(AppError::Forbidden);
     }
 
-    let assignment = assignment_service
+    let assignment = deps
+        .assignment_service
         .find_by_id(assignment_id)
         .await?
         .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
 
-    let existing = class_service
+    let existing = deps
+        .class_service
         .find_by_id(assignment.class_id)
         .await?
         .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
@@ -692,7 +765,19 @@ pub async fn edit_assignment_submit(
         return Err(AppError::Forbidden);
     }
 
-    let attachments = assignment_service.list_attachments(assignment_id).await?;
+    let attachments = deps
+        .assignment_service
+        .list_attachments(assignment_id)
+        .await?;
+    let roster_members = build_assignment_extension_rows(
+        &deps.assignment_service,
+        &deps.class_membership_service,
+        &deps.user_service,
+        existing.id,
+        assignment_id,
+        assignment.due_at,
+    )
+    .await?;
 
     let title = form.title.trim().to_string();
     let description_value = form.description.as_deref().unwrap_or("").trim().to_string();
@@ -717,6 +802,8 @@ pub async fn edit_assignment_submit(
                 due_at_value => due_at_value,
                 deadline_type_value => deadline_type_value,
                 points_value => points,
+                default_due_at => assignment.due_at,
+                roster_members => roster_members.clone(),
                 authenticity_token => token.authenticity_token().unwrap_or_default(),
             },
         )?;
@@ -750,7 +837,7 @@ pub async fn edit_assignment_submit(
         modified_by: claims.sub,
     };
 
-    match assignment_service.update(payload).await {
+    match deps.assignment_service.update(payload).await {
         Ok(updated) => Ok((
             StatusCode::SEE_OTHER,
             Redirect::to(&format!("/ui/instructors/classes/{}", updated.class_id)),
@@ -773,6 +860,8 @@ pub async fn edit_assignment_submit(
                     deadline_type_value => deadline_type_value,
                     description_value => description_value,
                     points_value => points,
+                    default_due_at => assignment.due_at,
+                    roster_members => roster_members,
                     authenticity_token => token.authenticity_token().unwrap_or_default(),
                 },
             )?;
@@ -781,6 +870,112 @@ pub async fn edit_assignment_submit(
             Ok(response)
         }
     }
+}
+
+pub async fn upsert_student_assignment_extension(
+    Path((assignment_id, student_id)): Path<(Uuid, Uuid)>,
+    State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    State(class_membership_service): State<Arc<dyn ClassMembershipServiceTrait>>,
+    Extension(claims): Extension<Claims>,
+    token: CsrfToken,
+    Form(form): Form<StudentAssignmentExtensionForm>,
+) -> Result<Response, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
+    let assignment = assignment_service
+        .find_by_id(assignment_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
+
+    let class = class_service
+        .find_by_id(assignment.class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+
+    if !matches!(claims.user_role, UserRole::Admin) && class.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    let is_enrolled = class_membership_service
+        .list_by_class_id(class.id)
+        .await?
+        .iter()
+        .any(|membership| {
+            membership.user_id == student_id
+                && matches!(membership.role, ClassMembershipRole::Student)
+        });
+    if !is_enrolled {
+        return Err(AppError::NotFound(
+            "Student is not enrolled in this class".into(),
+        ));
+    }
+
+    let due_at_value = form.due_at.trim();
+    let due_at = NaiveDateTime::parse_from_str(due_at_value, "%Y-%m-%dT%H:%M")
+        .map_err(|_| AppError::ValidationError("Invalid extension due date format".into()))?;
+
+    assignment_service
+        .upsert_student_extension(UpsertStudentAssignmentExtensionDto {
+            assignment_id,
+            student_id,
+            due_at: DateTime::<Utc>::from_naive_utc_and_offset(due_at, Utc),
+            modified_by: claims.sub,
+        })
+        .await?;
+
+    Ok((
+        StatusCode::SEE_OTHER,
+        Redirect::to(&format!("/ui/instructors/assignments/{assignment_id}/edit")),
+    )
+        .into_response())
+}
+
+pub async fn delete_student_assignment_extension(
+    Path((assignment_id, student_id)): Path<(Uuid, Uuid)>,
+    State(assignment_service): State<Arc<dyn AssignmentServiceTrait>>,
+    State(class_service): State<Arc<dyn ClassServiceTrait>>,
+    Extension(claims): Extension<Claims>,
+    token: CsrfToken,
+    Form(form): Form<DeleteStudentAssignmentExtensionForm>,
+) -> Result<Response, AppError> {
+    if !matches!(claims.user_role, UserRole::Instructor | UserRole::Admin) {
+        return Err(AppError::Forbidden);
+    }
+
+    if token.verify(&form.authenticity_token).is_err() {
+        return Err(AppError::Forbidden);
+    }
+
+    let assignment = assignment_service
+        .find_by_id(assignment_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Assignment not found".into()))?;
+
+    let class = class_service
+        .find_by_id(assignment.class_id)
+        .await?
+        .ok_or_else(|| AppError::NotFound("Class not found".into()))?;
+
+    if !matches!(claims.user_role, UserRole::Admin) && class.owner_id != Some(claims.sub) {
+        return Err(AppError::Forbidden);
+    }
+
+    assignment_service
+        .delete_student_extension(assignment_id, student_id)
+        .await?;
+
+    Ok((
+        StatusCode::SEE_OTHER,
+        Redirect::to(&format!("/ui/instructors/assignments/{assignment_id}/edit")),
+    )
+        .into_response())
 }
 
 pub async fn upload_assignment_attachments(
@@ -891,4 +1086,15 @@ pub struct EditAssignmentForm {
     deadline_type: String,
     authenticity_token: String,
     points: i16,
+}
+
+#[derive(serde::Deserialize)]
+pub struct StudentAssignmentExtensionForm {
+    due_at: String,
+    authenticity_token: String,
+}
+
+#[derive(serde::Deserialize)]
+pub struct DeleteStudentAssignmentExtensionForm {
+    authenticity_token: String,
 }

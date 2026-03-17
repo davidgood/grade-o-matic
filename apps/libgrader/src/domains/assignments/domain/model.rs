@@ -18,6 +18,8 @@ pub struct Assignment {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub extension_due_at: Option<DateTime<Utc>>,
+    pub effective_due_at: Option<DateTime<Utc>>,
     pub deadline_type: AssignmentDeadlineType,
     pub points: Option<i16>,
     pub created_by: Option<uuid::Uuid>,
@@ -57,6 +59,17 @@ pub struct StudentAssignmentSubmission {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct StudentAssignmentExtension {
+    pub assignment_id: uuid::Uuid,
+    pub student_id: uuid::Uuid,
+    pub due_at: DateTime<Utc>,
+    pub created_by: Option<uuid::Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub modified_by: Option<uuid::Uuid>,
+    pub modified_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 
 pub struct AssignmentWithAttachmentCount {
     pub id: uuid::Uuid,
@@ -64,6 +77,8 @@ pub struct AssignmentWithAttachmentCount {
     pub title: String,
     pub description: Option<String>,
     pub due_at: Option<DateTime<Utc>>,
+    pub extension_due_at: Option<DateTime<Utc>>,
+    pub effective_due_at: Option<DateTime<Utc>>,
     pub deadline_type: AssignmentDeadlineType,
     pub created_by: Option<uuid::Uuid>,
     pub created_at: Option<DateTime<Utc>>,
